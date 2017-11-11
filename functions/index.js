@@ -17,6 +17,11 @@
  * Trivia game fulfillment logic
  */
 var request_api = require('request');
+var pos = require('pos');
+var wordnet = require('wordnet');
+var Dictionary = require("oxford-dictionary-api");
+var app_id = "6c624e6e";
+var app_key = "9ac3e253904ba4573816dcc828e657fc";
 process.env.DEBUG = 'actions-on-google:*';
 const { DialogflowApp } = require('actions-on-google');
 const functions = require('firebase-functions');
@@ -1332,39 +1337,37 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     askQuestion(ssmlResponse, app.data.questionPrompt, app.data.selectedAnswers);
   };
 
-  const meaningIntent = (app) =>
-  {
-      //const ssmlResponse = new Ssml();
-      //ssmlResponse.say("Tum chutiye ho")
-      /*url='https://tranquil-meadow-51686.herokuapp.com/meaning';
-      var headers ={
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
-        'Content-Type' : 'application/x-www-form-urlencoded'
-      }
-      request_api({ url: url, form: form, headers: headers },function(error,res,body){
-        if(error)
-        {
-          logger.info(logObject('trivia', 'meaningIntent', {
-            info: 'Handling help yes intent',
-            rawInput: JSON.stringify(error)
-          }));
+const meaningIntent = (app) =>
+{
+    var words = new pos.Lexer().lex('What is the meaning of the word amity?');
+    var tagger = new pos.Tagger();
+    var taggedWords = tagger.tag(words);
+    var nn_word;
+    var word;
+    for (var i in taggedWords) {
+        var taggedWord = taggedWords[i];
+        nn_word = taggedWord[0];
+        var tag = taggedWord[1];
+        if(tag=='NN' && !(nn_word=='defination' || nn_word=='meaning' || nn_word=='mean' || nn_word=='word')){
+            word=taggedWord[0];
+            console.log(word + " /" + tag);    
         }
-        else {
-          logger.info(logObject('trivia', 'meaningIntent', {
-            info: 'Handling help yes intent',
-            rawInput: res.statusCode
-          }));
-        }
-        if( res.statusCode==200)
-        {
-          logger.info(logObject('trivia', 'meaningIntent', {
-            info: 'Handling help yes intent',
-            rawInput: body
-          }));*/
-          sendResponse(JSON.parse(body))
-        }
-      })
-  };
+
+    }
+  
+    /*var dict = new Dictionary(app_id,app_key);
+    dict.find("amity",function(error,data){
+        if(error) return console.log(error);
+        sendResponse(data['results'][0]['lexicalEntries'][0]['entries'][0]['senses'][0]['definitions']);
+    });*/
+    wordnet.lookup("amity", function(err, data) {
+        console.log('inside wordnet lookup function');
+        if(err) return console.log(err);
+        console.log(data[0]['glossary']);
+        sendResponse(data[0]['glossary']);
+        console.log('response sent');
+    });
+};
 
   // Handle multi-modal suggestion chips selection
   const listIntent = (app) => {

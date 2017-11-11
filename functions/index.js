@@ -16,7 +16,7 @@
 /**
  * Trivia game fulfillment logic
  */
-
+var request_api = require('request');
 process.env.DEBUG = 'actions-on-google:*';
 const { DialogflowApp } = require('actions-on-google');
 const functions = require('firebase-functions');
@@ -1336,19 +1336,34 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
   {
       //const ssmlResponse = new Ssml();
       //ssmlResponse.say("Tum chutiye ho")
-      logger.info(logObject('trivia', 'disagreeIntent', {
-        info: 'Handling meaning intent',
-        rawInput: app.getRawInput()
-      }));
-      //response.writeHead(200, {'Content-Type': 'application/json'});
-      dump={
-        "speech": "tum chu ho",
-        "displayText": "",
-        "data": {},
-        "contextOut": [],
-        "source": "DuckDuckGo"
-      };
-      mainIntent(app);
+      /*url='https://tranquil-meadow-51686.herokuapp.com/meaning';
+      var headers ={
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:24.0) Gecko/20100101 Firefox/24.0',
+        'Content-Type' : 'application/x-www-form-urlencoded'
+      }
+      request_api({ url: url, form: form, headers: headers },function(error,res,body){
+        if(error)
+        {
+          logger.info(logObject('trivia', 'meaningIntent', {
+            info: 'Handling help yes intent',
+            rawInput: JSON.stringify(error)
+          }));
+        }
+        else {
+          logger.info(logObject('trivia', 'meaningIntent', {
+            info: 'Handling help yes intent',
+            rawInput: res.statusCode
+          }));
+        }
+        if( res.statusCode==200)
+        {
+          logger.info(logObject('trivia', 'meaningIntent', {
+            info: 'Handling help yes intent',
+            rawInput: body
+          }));*/
+          sendResponse(JSON.parse(body))
+        }
+      })
   };
 
   // Handle multi-modal suggestion chips selection
@@ -1379,6 +1394,30 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     }));
     valueIntent(app, answer, null);
   };
+
+  function sendResponse (responseToUser) {
+  // if the response is a string send it as a response to the user
+  if (typeof responseToUser === 'string') {
+    let responseJson = {};
+    responseJson.speech = responseToUser; // spoken response
+    responseJson.displayText = responseToUser; // displayed response
+    response.json(responseJson); // Send response to Dialogflow
+  } else {
+    // If the response to the user includes rich responses or contexts send them to Dialogflow
+    let responseJson = {};
+
+    // If speech or displayText is defined, use it to respond (if one isn't defined use the other's value)
+    responseJson.speech = responseToUser.speech || responseToUser.displayText;
+    responseJson.displayText = responseToUser.displayText || responseToUser.speech;
+
+    // Optional: add rich messages for integrations (https://dialogflow.com/docs/rich-messages)
+    responseJson.data = responseToUser.richResponses;
+
+    // Optional: add contexts (https://dialogflow.com/docs/contexts)
+    responseJson.contextOut = responseToUser.outputContexts;
+
+    response.json(responseJson); // Send response to Dialogflow
+  }}
 
   const actionMap = new Map();
   actionMap.set(MAIN_INTENT, mainIntent);

@@ -20,10 +20,13 @@
     "firebase-encode": "0.0.5",
     "firebase-functions": "^0.5.8",
     "levenshtein": "^1.0.5",
+    "oxford-dictionary-api": "^1.0.1",
+    "pos": "^0.4.2",
     "request": "^2.83.0",
     "requestify": "^0.2.5",
     "sprintf-js": "^1.1.1",
-    "winston": "^2.3.1"
+    "winston": "^2.3.1",
+    "wordnet": "^0.1.2"
   },
   "devDependencies": {
     "eslint": "^3.19.0",

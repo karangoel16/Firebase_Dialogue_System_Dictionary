@@ -95,6 +95,7 @@ const FEELING_LUCKY_INTENT = 'game.feeling_lucky';
 const TRUE_FALSE_CONTEXT = 'true_false';
 const ITEM_INTENT = 'game.choice.item';
 const MEANING_INTENT = 'meaning';
+const SYNONYM_INTENT = 'synonym';
 
 const TTS_DELAY = '500ms';
 
@@ -1339,36 +1340,82 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 
 const meaningIntent = (app) =>
 {
-    var words = new pos.Lexer().lex('What is the meaning of the word amity?');
+
+    console.log(request.body["result"]["resolvedQuery"]);
+    var words = new pos.Lexer().lex(request.body["result"]["resolvedQuery"]);
     var tagger = new pos.Tagger();
     var taggedWords = tagger.tag(words);
     var nn_word;
-    var word;
+    var word=null;
     for (var i in taggedWords) {
         var taggedWord = taggedWords[i];
         nn_word = taggedWord[0];
         var tag = taggedWord[1];
         if(tag=='NN' && !(nn_word=='defination' || nn_word=='meaning' || nn_word=='mean' || nn_word=='word')){
             word=taggedWord[0];
-            console.log(word + " /" + tag);    
+            console.log(word + " /" + tag);
+            break;
+
         }
 
     }
-  
+
     /*var dict = new Dictionary(app_id,app_key);
     dict.find("amity",function(error,data){
         if(error) return console.log(error);
         sendResponse(data['results'][0]['lexicalEntries'][0]['entries'][0]['senses'][0]['definitions']);
     });*/
-    wordnet.lookup("amity", function(err, data) {
-        console.log('inside wordnet lookup function');
-        if(err) return console.log(err);
-        console.log(data[0]['glossary']);
-        sendResponse(data[0]['glossary']);
-        console.log('response sent');
-    });
+    if(word!=null)
+    {
+      wordnet.lookup(word, function(err, data) {
+          console.log('inside wordnet lookup function');
+          if(err) return console.log(err);
+          console.log(data[0]['glossary']);
+          sendResponse(data[0]['glossary']);
+          console.log('response sent');
+        });
+    }
+    else
+    sendResponse("This word is not in my dictionary yet");
 };
 
+const synonymIntent = (app) =>{
+  var words = new pos.Lexer().lex(request.body["result"]["resolvedQuery"]);
+  var tagger = new pos.Tagger();
+  var taggedWords = tagger.tag(words);
+  var nn_word;
+  var word=null;
+  for (var i in taggedWords) {
+      var taggedWord = taggedWords[i];
+      nn_word = taggedWord[0];
+      var tag = taggedWord[1];
+      if(tag=='NN' && !(nn_word=='synonym' || nn_word=='similar' || nn_word=="word")){
+          word=taggedWord[0];
+          console.log(word + " /" + tag);
+          break;
+
+      }
+
+  }
+  if(word!=null)
+  {
+    wordnet.lookup(word, function(err, definitions) {
+      var a="";
+      definitions[0].meta.words.forEach(function(word)
+      {
+        a+=word.word+"; ";
+      })
+      sendResponse(a);
+    });
+  }
+  else {
+    sendResponse("This word is not in my dictionary yet");
+  }
+    /*definitions.forEach(function(definition) {
+      //console.log('  words: %s', words.trim());
+      console.log('  %s', definition.glossary);
+    });*/
+}
   // Handle multi-modal suggestion chips selection
   const listIntent = (app) => {
     logger.info(logObject('trivia', 'listIntent', {
@@ -1452,6 +1499,6 @@ const meaningIntent = (app) =>
   actionMap.set(FALSE_INTENT, falseIntent);
   actionMap.set(ITEM_INTENT, listIntent);
   actionMap.set(MEANING_INTENT,meaningIntent);
-
+  actionMap.set(SYNONYM_INTENT,synonymIntent);
   app.handleRequest(actionMap);
 });

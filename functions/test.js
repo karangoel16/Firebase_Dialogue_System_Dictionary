@@ -3,6 +3,7 @@ var wordnet = require('wordnet');
 
 wordnet.lookup('ace', function(err, definitions) {
   var a=""
+  console.log(definitions[0]["glossary"])
   definitions[0].meta.words.forEach(function(word)
   {
     a+=word.word+"; ";

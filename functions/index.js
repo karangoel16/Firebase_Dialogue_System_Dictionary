@@ -1340,10 +1340,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 
 const meaningIntent = (app) =>
 {
-
+    
     console.log(request.body["result"]["resolvedQuery"]);
-    var words = new pos.Lexer().lex(request.body["result"]["resolvedQuery"]);
-    var tagger = new pos.Tagger();
+    var word = request.body["result"]["parameters"]["Word"];
+    /*var tagger = new pos.Tagger();
     var taggedWords = tagger.tag(words);
     var nn_word;
     var word=null;
@@ -1359,7 +1359,7 @@ const meaningIntent = (app) =>
         }
 
     }
-
+    */
     /*var dict = new Dictionary(app_id,app_key);
     dict.find("amity",function(error,data){
         if(error) return console.log(error);
@@ -1369,7 +1369,7 @@ const meaningIntent = (app) =>
     {
       wordnet.lookup(word, function(err, data) {
           console.log('inside wordnet lookup function');
-          if(err) return console.log(err);
+          if(err) sendResponse("This word is not in my dictionary yet");
           console.log(data[0]['glossary']);
           sendResponse(data[0]['glossary']);
           console.log('response sent');

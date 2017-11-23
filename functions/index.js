@@ -83,6 +83,7 @@ const DONE_CONTEXT = 'quit';
 const DONE_YES_INTENT = 'game.quit.yes';
 const DONE_NO_INTENT = 'game.quit.no';
 const HELP_CONTEXT = 'help';
+const Synonyn_CONTEXT="word-synonym";
 const HELP_YES_INTENT = 'game.help.yes';
 const HELP_NO_INTENT = 'game.help.no';
 const UNKNOWN_DEEPLINK_ACTION = 'deeplink.unknown';
@@ -96,7 +97,7 @@ const TRUE_FALSE_CONTEXT = 'true_false';
 const ITEM_INTENT = 'game.choice.item';
 const MEANING_INTENT = 'meaning';
 const SYNONYM_INTENT = 'synonym';
-
+const SYNONYM_OTHER_INTENT = 'synonymOther'
 const TTS_DELAY = '500ms';
 
 const MAX_PREVIOUS_QUESTIONS = 100;
@@ -1268,6 +1269,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         doneNoIntent(app);
         return;
       }
+      else if(context.name === Synonyn_CONTEXT){
+        synonymOtherIntent(app)
+        return;
+      }
     }
     // Randomly select an answer
     const selectedAnswers = app.data.selectedAnswers;
@@ -1353,9 +1358,11 @@ const meaningIntent = (app) =>
             app.context(MEANING_INTENT);
           } 
           console.log(data[0]['glossary']);
-          ssmlResponse.say(data[0]['glossary']);
+          ssmlResponse.say(data[0]['glossary']+". Would you like to know the synonym of the word as well?");
 
-          app.setContext(SYNONYM_INTENT);
+          app.setContext(Synonyn_CONTEXT);
+          app.data.word=word
+          console.log(app.data);
           app.ask(app
             .buildRichResponse()
             .addSimpleResponse(ssmlResponse.toString())
@@ -1368,6 +1375,33 @@ const meaningIntent = (app) =>
     sendResponse("This word is not in my dictionary yet");
 };
 
+//this is used to find synonym after one step of either meaning or synonym
+
+const synonymOtherIntent = (app) =>
+{
+  console.log("YAYAYAYAY");
+  var word = (app.data.word===undefined?null:app.data.word);//request.body["result"]["parameters"]["Word"];;
+  if(word!=null)
+  {
+    wordnet.lookup(word, function(err, definitions) {
+      if(err)
+      {
+        sendResponse("This word is not in my dictionary yet");
+      }
+      var a="";
+      app.data.word=word
+      definitions[0].meta.words.forEach(function(word)
+      {
+        a+=word.word+"; ";
+      })
+      sendResponse(a);
+    });
+  }
+  else {
+    sendResponse("This word is not in my dictionary yet");
+  }
+}
+
 const synonymIntent = (app) =>{
   var word = request.body["result"]["parameters"]["Word"];;
   if(word!=null)
@@ -1378,6 +1412,7 @@ const synonymIntent = (app) =>{
         sendResponse("This word is not in my dictionary yet");
       }
       var a="";
+      app.data.word=word
       definitions[0].meta.words.forEach(function(word)
       {
         a+=word.word+"; ";
@@ -1473,5 +1508,6 @@ const synonymIntent = (app) =>{
   actionMap.set(ITEM_INTENT, listIntent);
   actionMap.set(MEANING_INTENT,meaningIntent);
   actionMap.set(SYNONYM_INTENT,synonymIntent);
+  actionMap.set(SYNONYM_OTHER_INTENT,synonymOtherIntent);
   app.handleRequest(actionMap);
 });

@@ -1340,38 +1340,27 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 
 const meaningIntent = (app) =>
 {
-    
+    let ssmlResponse= new Ssml();
     console.log(request.body["result"]["resolvedQuery"]);
     var word = request.body["result"]["parameters"]["Word"];
-    /*var tagger = new pos.Tagger();
-    var taggedWords = tagger.tag(words);
-    var nn_word;
-    var word=null;
-    for (var i in taggedWords) {
-        var taggedWord = taggedWords[i];
-        nn_word = taggedWord[0];
-        var tag = taggedWord[1];
-        if(tag=='NN' && !(nn_word=='defination' || nn_word=='meaning' || nn_word=='mean' || nn_word=='word')){
-            word=taggedWord[0];
-            console.log(word + " /" + tag);
-            break;
-
-        }
-
-    }
-    */
-    /*var dict = new Dictionary(app_id,app_key);
-    dict.find("amity",function(error,data){
-        if(error) return console.log(error);
-        sendResponse(data['results'][0]['lexicalEntries'][0]['entries'][0]['senses'][0]['definitions']);
-    });*/
     if(word!=null)
     {
       wordnet.lookup(word, function(err, data) {
           console.log('inside wordnet lookup function');
-          if(err) sendResponse("This word is not in my dictionary yet");
+          if(err)
+          {
+            ssmlResponse.say("This word is not in my dictionary yet")
+            app.context(MEANING_INTENT);
+          } 
           console.log(data[0]['glossary']);
-          sendResponse(data[0]['glossary']);
+          ssmlResponse.say(data[0]['glossary']);
+
+          app.setContext(SYNONYM_INTENT);
+          app.ask(app
+            .buildRichResponse()
+            .addSimpleResponse(ssmlResponse.toString())
+            .addSuggestions([utils.YES, utils.NO]));
+          //sendResponse(data[0]['glossary']);
           console.log('response sent');
         });
     }
@@ -1380,26 +1369,14 @@ const meaningIntent = (app) =>
 };
 
 const synonymIntent = (app) =>{
-  var words = new pos.Lexer().lex(request.body["result"]["resolvedQuery"]);
-  var tagger = new pos.Tagger();
-  var taggedWords = tagger.tag(words);
-  var nn_word;
-  var word=null;
-  for (var i in taggedWords) {
-      var taggedWord = taggedWords[i];
-      nn_word = taggedWord[0];
-      var tag = taggedWord[1];
-      if(tag=='NN' && !(nn_word=='synonym' || nn_word=='similar' || nn_word=="word")){
-          word=taggedWord[0];
-          console.log(word + " /" + tag);
-          break;
-
-      }
-
-  }
+  var word = request.body["result"]["parameters"]["Word"];;
   if(word!=null)
   {
     wordnet.lookup(word, function(err, definitions) {
+      if(err)
+      {
+        sendResponse("This word is not in my dictionary yet");
+      }
       var a="";
       definitions[0].meta.words.forEach(function(word)
       {
@@ -1411,10 +1388,6 @@ const synonymIntent = (app) =>{
   else {
     sendResponse("This word is not in my dictionary yet");
   }
-    /*definitions.forEach(function(definition) {
-      //console.log('  words: %s', words.trim());
-      console.log('  %s', definition.glossary);
-    });*/
 }
   // Handle multi-modal suggestion chips selection
   const listIntent = (app) => {

@@ -1,131 +1,133 @@
-// Copyright 2017, Google, Inc.
-// Licensed under the Apache License, Version 2.0 (the 'License');
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an 'AS IS' BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+  // Copyright 2017, Google, Inc.
+  // Licensed under the Apache License, Version 2.0 (the 'License');
+  // you may not use this file except in compliance with the License.
+  // You may obtain a copy of the License at
+  //
+  //    http://www.apache.org/licenses/LICENSE-2.0
+  //
+  // Unless required by applicable law or agreed to in writing, software
+  // distributed under the License is distributed on an 'AS IS' BASIS,
+  // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  // See the License for the specific language governing permissions and
+  // limitations under the License.
 
-'use strict';
+  'use strict';
 
-/**
- * Trivia game fulfillment logic
- */
-var request_api = require('request');
-var pos = require('pos');
-var wordnet = require('wordnet');
-var Dictionary = require("oxford-dictionary-api");
-var app_id = "6c624e6e";
-var app_key = "9ac3e253904ba4573816dcc828e657fc";
-process.env.DEBUG = 'actions-on-google:*';
-const { DialogflowApp } = require('actions-on-google');
-const functions = require('firebase-functions');
-const firebaseAdmin = require('firebase-admin');
+  /**
+   * Trivia game fulfillment logic
+   */
+  var request_api = require('request');
+  var pos = require('pos');
+  var wordnet = require('wordnet');
+  var Dictionary = require("oxford-dictionary-api");
+  var wn= require("wordnetjs")
+  var app_id = "6c624e6e";
+  var app_key = "9ac3e253904ba4573816dcc828e657fc";
+  process.env.DEBUG = 'actions-on-google:*';
+  const { DialogflowApp } = require('actions-on-google');
+  const functions = require('firebase-functions');
+  const firebaseAdmin = require('firebase-admin');
 
-const firebaseConfig = functions.config().firebase;
-firebaseAdmin.initializeApp(firebaseConfig);
+  const firebaseConfig = functions.config().firebase;
+  firebaseAdmin.initializeApp(firebaseConfig);
 
-/**
- * (Optional) Change this to the url of your custom hosting site
- * By default, it uses the Firebase hosting authDomain as the root url
- */
-const CUSTOM_HOSTING_URL = '';
+  /**
+   * (Optional) Change this to the url of your custom hosting site
+   * By default, it uses the Firebase hosting authDomain as the root url
+   */
+  const CUSTOM_HOSTING_URL = '';
 
-const HOSTING_URL = CUSTOM_HOSTING_URL || `https://${firebaseConfig.authDomain}`;
+  const HOSTING_URL = CUSTOM_HOSTING_URL || `https://${firebaseConfig.authDomain}`;
 
-// Logging dependencies
-const winston = require('winston');
-winston.loggers.add('DEFAULT_LOGGER', {
+  // Logging dependencies
+  const winston = require('winston');
+  winston.loggers.add('DEFAULT_LOGGER', {
   console: {
     colorize: true,
     label: 'Default logger',
     json: false,
     timestamp: true
   }
-});
-const logger = winston.loggers.get('DEFAULT_LOGGER');
-const { logObject } = require('./utils');
-logger.transports.console.level = 'debug';
+  });
+  const logger = winston.loggers.get('DEFAULT_LOGGER');
+  const { logObject } = require('./utils');
+  logger.transports.console.level = 'debug';
 
-const Ssml = require('./ssml').SSML;
-const { sprintf } = require('sprintf-js');
-const utils = require('./utils');
+  const Ssml = require('./ssml').SSML;
+  const { sprintf } = require('sprintf-js');
+  const utils = require('./utils');
 
-const { Themes, PROMPT_TYPES, AUDIO_TYPES, THEME_TYPES } = require('./themes');
+  const { Themes, PROMPT_TYPES, AUDIO_TYPES, THEME_TYPES } = require('./themes');
 
-const { generateSynonyms, getSynonyms } = require('./utils');
+  const { generateSynonyms, getSynonyms } = require('./utils');
 
-const MAIN_INTENT = 'game.start';
-const VALUE_INTENT = 'game.choice.value';
-const UNKNOWN_INTENT = 'game.unknown';
-const REPEAT_INTENT = 'game.question.repeat';
-const SCORE_INTENT = 'game.score';
-const HELP_INTENT = 'game.help';
-const QUIT_INTENT = 'game.quit';
-const NEW_INTENT = 'game.restart';
-const ANSWERS_INTENT = 'game.answers';
-const DONT_KNOW_INTENT = 'game.answers.dont_know';
-const ORDINAL_INTENT = 'game.choice.ordinal';
-const LAST_INTENT = 'game.choice.last';
-const MIDDLE_INTENT = 'game.choice.middle';
-const TRUE_INTENT = 'game.choice.true';
-const FALSE_INTENT = 'game.choice.false';
-const HINT_INTENT = 'game.hint';
-const PLAY_AGAIN_CONTEXT = 'restart';
-const PLAY_AGAIN_YES_INTENT = 'game.restart.yes';
-const PLAY_AGAIN_NO_INTENT = 'game.restart.no';
-const DONE_CONTEXT = 'quit';
-const DONE_YES_INTENT = 'game.quit.yes';
-const DONE_NO_INTENT = 'game.quit.no';
-const HELP_CONTEXT = 'help';
-const Synonyn_CONTEXT="word-synonym";
-const HELP_YES_INTENT = 'game.help.yes';
-const HELP_NO_INTENT = 'game.help.no';
-const UNKNOWN_DEEPLINK_ACTION = 'deeplink.unknown';
-const RAW_TEXT_ARGUMENT = 'raw_text';
-const DISAGREE_INTENT = 'game.answers.wrong';
-const ANSWER_INTENT = 'game.choice.answer';
-const ANSWER_ARGUMENT = 'answer';
-const MISTAKEN_INTENT = 'game.mistaken';
-const FEELING_LUCKY_INTENT = 'game.feeling_lucky';
-const TRUE_FALSE_CONTEXT = 'true_false';
-const ITEM_INTENT = 'game.choice.item';
-const MEANING_INTENT = 'meaning';
-const SYNONYM_INTENT = 'synonym';
-const SYNONYM_OTHER_INTENT = 'synonymOther'
-const TTS_DELAY = '500ms';
+  const MAIN_INTENT = 'game.start';
+  const VALUE_INTENT = 'game.choice.value';
+  const UNKNOWN_INTENT = 'game.unknown';
+  const REPEAT_INTENT = 'game.question.repeat';
+  const SCORE_INTENT = 'game.score';
+  const HELP_INTENT = 'game.help';
+  const QUIT_INTENT = 'game.quit';
+  const NEW_INTENT = 'game.restart';
+  const ANSWERS_INTENT = 'game.answers';
+  const DONT_KNOW_INTENT = 'game.answers.dont_know';
+  const ORDINAL_INTENT = 'game.choice.ordinal';
+  const LAST_INTENT = 'game.choice.last';
+  const MIDDLE_INTENT = 'game.choice.middle';
+  const TRUE_INTENT = 'game.choice.true';
+  const FALSE_INTENT = 'game.choice.false';
+  const HINT_INTENT = 'game.hint';
+  const PLAY_AGAIN_CONTEXT = 'restart';
+  const PLAY_AGAIN_YES_INTENT = 'game.restart.yes';
+  const PLAY_AGAIN_NO_INTENT = 'game.restart.no';
+  const DONE_CONTEXT = 'quit';
+  const DONE_YES_INTENT = 'game.quit.yes';
+  const DONE_NO_INTENT = 'game.quit.no';
+  const HELP_CONTEXT = 'help';
+  const Synonyn_CONTEXT="word-synonym";
+  const HELP_YES_INTENT = 'game.help.yes';
+  const HELP_NO_INTENT = 'game.help.no';
+  const UNKNOWN_DEEPLINK_ACTION = 'deeplink.unknown';
+  const RAW_TEXT_ARGUMENT = 'raw_text';
+  const DISAGREE_INTENT = 'game.answers.wrong';
+  const ANSWER_INTENT = 'game.choice.answer';
+  const ANSWER_ARGUMENT = 'answer';
+  const MISTAKEN_INTENT = 'game.mistaken';
+  const FEELING_LUCKY_INTENT = 'game.feeling_lucky';
+  const TRUE_FALSE_CONTEXT = 'true_false';
+  const ITEM_INTENT = 'game.choice.item';
+  const MEANING_INTENT = 'meaning';
+  const SYNONYM_INTENT = 'synonym';
+  const SYNONYM_OTHER_INTENT = 'synonymOther' 
+  const TTS_DELAY = '500ms';
+  const ANTONYM_INTENT='antonym';
 
-const MAX_PREVIOUS_QUESTIONS = 100;
-const SUGGESTION_CHIPS_MAX_TEXT_LENGTH = 25;
-const SUGGESTION_CHIPS_MAX = 8;
-const GAME_TITLE = 'The Word Game';
-const QUESTIONS_PER_GAME = 4;
+  const MAX_PREVIOUS_QUESTIONS = 100;
+  const SUGGESTION_CHIPS_MAX_TEXT_LENGTH = 25;
+  const SUGGESTION_CHIPS_MAX = 8;
+  const GAME_TITLE = 'The Word Game';
+  const QUESTIONS_PER_GAME = 4;
 
-// Firebase data keys
-const DATABASE_PATH_USERS = 'users/';
-const DATABASE_PATH_DICTIONARY = 'dictionary/';
-const DATABASE_QUESTIONS = 'questions';
-const DATABASE_DATA = 'data';
-const DATABASE_PREVIOUS_QUESTIONS = 'previousQuestions';
-const DATABASE_HIGHEST_SCORE = 'highestScore';
-const DATABASE_LOWEST_SCORE = 'lowestScore';
-const DATABASE_AVERAGE_SCORE = 'averageScore';
-const DATABASE_TOTAL_SCORE = 'totalScore';
-const DATABASE_SCORES = 'scores';
-const DATABASE_VISITS = 'visits';
-const DATABASE_ANSWERS = 'answers';
-const DATABASE_FOLLOW_UPS = 'followUps';
+  // Firebase data keys
+  const DATABASE_PATH_USERS = 'users/';
+  const DATABASE_PATH_DICTIONARY = 'dictionary/';
+  const DATABASE_QUESTIONS = 'questions';
+  const DATABASE_DATA = 'data';
+  const DATABASE_PREVIOUS_QUESTIONS = 'previousQuestions';
+  const DATABASE_HIGHEST_SCORE = 'highestScore';
+  const DATABASE_LOWEST_SCORE = 'lowestScore';
+  const DATABASE_AVERAGE_SCORE = 'averageScore';
+  const DATABASE_TOTAL_SCORE = 'totalScore';
+  const DATABASE_SCORES = 'scores';
+  const DATABASE_VISITS = 'visits';
+  const DATABASE_ANSWERS = 'answers';
+  const DATABASE_FOLLOW_UPS = 'followUps';
 
-const theme = THEME_TYPES.TRIVIA_TEACHER_THEME;
-const AUDIO_BASE_URL = `${HOSTING_URL}/audio/`;
+  const theme = THEME_TYPES.TRIVIA_TEACHER_THEME;
+  const AUDIO_BASE_URL = `${HOSTING_URL}/audio/`;
 
-// Cloud Functions for Firebase entry point
-exports.triviaGame = functions.https.onRequest((request, response) => {
+  // Cloud Functions for Firebase entry point
+  exports.triviaGame = functions.https.onRequest((request, response) => {
   logger.info(logObject('trivia', 'handleRequest', {
     info: 'Handle request',
     headers: JSON.stringify(request.headers),
@@ -1343,8 +1345,8 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     askQuestion(ssmlResponse, app.data.questionPrompt, app.data.selectedAnswers);
   };
 
-const meaningIntent = (app) =>
-{
+  const meaningIntent = (app) =>
+  {
     let ssmlResponse= new Ssml();
     console.log(request.body["result"]["resolvedQuery"]);
     var word = request.body["result"]["parameters"]["Word"];
@@ -1354,12 +1356,10 @@ const meaningIntent = (app) =>
           console.log('inside wordnet lookup function');
           if(err)
           {
-            ssmlResponse.say("This word is not in my dictionary yet")
-            app.context(MEANING_INTENT);
+            sendResponse("This word is not in my dictionary yet");
           } 
           console.log(data[0]['glossary']);
           ssmlResponse.say(data[0]['glossary']+". Would you like to know the synonym of the word as well?");
-
           app.setContext(Synonyn_CONTEXT);
           app.data.word=word
           console.log(app.data);
@@ -1373,13 +1373,12 @@ const meaningIntent = (app) =>
     }
     else
     sendResponse("This word is not in my dictionary yet");
-};
+  };
 
-//this is used to find synonym after one step of either meaning or synonym
+  //this is used to find synonym after one step of either meaning or synonym
 
-const synonymOtherIntent = (app) =>
-{
-  console.log("YAYAYAYAY");
+  const synonymOtherIntent = (app) =>
+  {
   var word = (app.data.word===undefined?null:app.data.word);//request.body["result"]["parameters"]["Word"];;
   if(word!=null)
   {
@@ -1400,9 +1399,9 @@ const synonymOtherIntent = (app) =>
   else {
     sendResponse("This word is not in my dictionary yet");
   }
-}
+  }
 
-const synonymIntent = (app) =>{
+  const synonymIntent = (app) =>{
   var word = request.body["result"]["parameters"]["Word"];;
   if(word!=null)
   {
@@ -1423,7 +1422,36 @@ const synonymIntent = (app) =>{
   else {
     sendResponse("This word is not in my dictionary yet");
   }
-}
+  }
+
+  const antonymIntent =(app) =>{
+  let ssmlResponse= new Ssml();
+  var word = request.body["result"]["parameters"]["Word"];
+
+  if(word!=null)
+  {
+    wordnet.lookup(word,function(err,definitions){
+      if(err)
+      {
+        sendResponse("This word is not in my dictionary");
+      }
+      antonyms=""
+      wn.antonyms("hard").forEach(function(word){
+        word["words"].forEach(function(val){
+          antonyms+=val+";"
+        })
+      })
+      ssmlResponse.say(antonyms);
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions([utils.YES, utils.NO]));
+    })
+  }
+  else{
+    sendResponse("This word is not in my dictionary");
+  }
+  }
   // Handle multi-modal suggestion chips selection
   const listIntent = (app) => {
     logger.info(logObject('trivia', 'listIntent', {
@@ -1509,5 +1537,6 @@ const synonymIntent = (app) =>{
   actionMap.set(MEANING_INTENT,meaningIntent);
   actionMap.set(SYNONYM_INTENT,synonymIntent);
   actionMap.set(SYNONYM_OTHER_INTENT,synonymOtherIntent);
+  actionMap.set(ANTONYM_INTENT,antonymIntent);
   app.handleRequest(actionMap);
-});
+  });

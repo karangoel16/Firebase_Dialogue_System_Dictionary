@@ -26,7 +26,7 @@ var serviceAccount = require("./path/to/serviceAccountKey.json");
 const DATABASE_DATA_KEY="data";
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://newagent-4879d.firebaseio.com"
+  databaseURL: "https://nlpproject-4be01.firebaseio.com/"
 });
 
 // Wait for data to be updated before exiting app

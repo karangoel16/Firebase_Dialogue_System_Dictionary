@@ -100,6 +100,9 @@ const ANTONYM_INTENT = 'antonym';
 const WORD_HELP_INTENT = "word.help";
 const WELCOME_INTENT = 'input.welcome';
 const DICT_INTENT = "dictionary";
+const WORD_EXIT_INTENT ="word.quit";
+const WORD_EXIT_YES_INTENT="word.quit.yes";
+const WORD_EXIT_NO_INTENT ="word.quit.no";
 const TTS_DELAY = '500ms';
 
 const MAX_PREVIOUS_QUESTIONS = 100;
@@ -1493,6 +1496,29 @@ const dictionaryIntent = (app) =>{
     .addSuggestions(["meaning of ace","antonym of ace","synonym of ace","help"])
   )
 }
+
+const wordExitIntent = (app) =>{
+  var ssmlResponse = new Ssml();
+  ssmlResponse.say("Would you like to leave?");
+  app.ask(app
+    .buildRichResponse()
+    .addSimpleResponse(ssmlResponse.toString())
+    .addSuggestions(["Yes","No"])
+  )
+}
+
+const wordExitYesIntent =(app)=>{
+  ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WORD_QUIT_PROMPTS)+".Please fill the feedback of how did I perform.");
+  app.ask(app
+    .buildRichResponse()
+    .addSimpleResponse(ssmlResponse.toString())
+    .addSuggestionLink("Feedback","https://goo.gl/forms/IO2IrAjnYF0GrFci1")
+  )
+}
+
+const WordExitNoIntent= (app) ={
+  dictionaryIntent(app);
+}
   // Handle multi-modal suggestion chips selection
   const listIntent = (app) => {
     logger.info(logObject('trivia', 'listIntent', {
@@ -1582,5 +1608,8 @@ const dictionaryIntent = (app) =>{
   actionMap.set(WORD_HELP_INTENT,wordhelpIntent);
   actionMap.set(WELCOME_INTENT,welcomeIntent);
   actionMap.set(DICT_INTENT,dictionaryIntent);
+  actionMap.set(WORD_EXIT_INTENT,wordExitIntent);
+  actionMap.set(WORD_EXIT_YES_INTENT,wordExitYesIntent);
+  actionMap.set(WORD_EXIT_NO_INTENT,WordExitNoIntent);
   app.handleRequest(actionMap);
 });

@@ -95,7 +95,8 @@ const TRUE_FALSE_CONTEXT = 'true_false';
 const ITEM_INTENT = 'game.choice.item';
 const MEANING_INTENT = 'meaning';
 const SYNONYM_INTENT = 'synonym';
-const SYNONYM_OTHER_INTENT = 'synonymOther'
+const SYNONYM_OTHER_INTENT = 'synonymOther';
+const SYNONYM_OTHER_NO_INTENT='synonym.other.no';
 const ANTONYM_INTENT = 'antonym';
 const WORD_HELP_INTENT = "word.help";
 const WELCOME_INTENT = 'input.welcome';
@@ -1508,6 +1509,7 @@ const wordExitIntent = (app) =>{
 }
 
 const wordExitYesIntent =(app)=>{
+  var ssmlResponse = new Ssml();
   ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WORD_QUIT_PROMPTS)+".Please fill the feedback of how did I perform.");
   app.ask(app
     .buildRichResponse()
@@ -1516,7 +1518,14 @@ const wordExitYesIntent =(app)=>{
   )
 }
 
-const WordExitNoIntent= (app) ={
+const WordExitNoIntent= (app) =>{
+  dictionaryIntent(app);
+}
+
+const synonymOtherNoIntent=(app) =>{
+  var ssmlResponse = new Ssml();
+  ssmlResponse.say("Okay taking back to dictionary instead");
+  app.tell(ssmlResponse.toString());
   dictionaryIntent(app);
 }
   // Handle multi-modal suggestion chips selection
@@ -1611,5 +1620,6 @@ const WordExitNoIntent= (app) ={
   actionMap.set(WORD_EXIT_INTENT,wordExitIntent);
   actionMap.set(WORD_EXIT_YES_INTENT,wordExitYesIntent);
   actionMap.set(WORD_EXIT_NO_INTENT,WordExitNoIntent);
+  actionMap.set(SYNONYM_OTHER_NO_INTENT,synonymOtherNoIntent);
   app.handleRequest(actionMap);
 });

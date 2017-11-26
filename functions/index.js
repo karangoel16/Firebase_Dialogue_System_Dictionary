@@ -98,6 +98,8 @@ const SYNONYM_INTENT = 'synonym';
 const SYNONYM_OTHER_INTENT = 'synonymOther'
 const ANTONYM_INTENT = 'antonym';
 const WORD_HELP_INTENT = "word.help";
+const WELCOME_INTENT = 'input.welcome';
+const DICT_INTENT = "dictionary";
 const TTS_DELAY = '500ms';
 
 const MAX_PREVIOUS_QUESTIONS = 100;
@@ -953,7 +955,11 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     const ssmlResponse = new Ssml();
     ssmlResponse.say(sprintf(getRandomPrompt(PROMPT_TYPES.END_PROMPTS), app.data.score, app.data.gameLength));
     ssmlResponse.audio(getRandomAudio(AUDIO_TYPES.AUDIO_GAME_OUTRO), 'game ending');
-    app.tell(ssmlResponse.toString());
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestions(["Yes","No"])
+    )
   };
 
   // Handle user play again YES response (already in play again context)
@@ -996,9 +1002,13 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     }));
 
     const ssmlResponse = new Ssml();
-    ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.QUIT_PROMPTS));
+    ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.QUIT_PROMPTS)+".Please fill the feedback of how did I perform.");
     ssmlResponse.audio(getRandomAudio(AUDIO_TYPES.AUDIO_GAME_OUTRO), 'game ending');
-    app.tell(ssmlResponse.toString());
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestionLink("Feedback","https://goo.gl/forms/IO2IrAjnYF0GrFci1")
+    )
   };
 
   // Handle user done NO response (already in done context)
@@ -1464,6 +1474,25 @@ const wordhelpIntent = (app) =>{
     .addSuggestions(["play game"]));
 }
 
+const welcomeIntent = (app) =>{
+  var ssmlResponse = new Ssml();
+  ssmlResponse.say("Would you like to play game or Would you like to go to dictionary");
+  app.ask(app
+    .buildRichResponse()
+    .addSimpleResponse(ssmlResponse.toString())
+    .addSuggestions(["play game","dictionary"])
+  )
+}
+
+const dictionaryIntent = (app) =>{
+  var ssmlResponse =new Ssml();
+  ssmlResponse.say("I can tell meaning, synonyms or antonyms of the word");
+  app.ask(app
+    .buildRichResponse()
+    .addSimpleResponse(ssmlResponse.toString())
+    .addSuggestions(["meaning of ace","antonym of ace","synonym of ace","help"])
+  )
+}
   // Handle multi-modal suggestion chips selection
   const listIntent = (app) => {
     logger.info(logObject('trivia', 'listIntent', {
@@ -1551,5 +1580,7 @@ const wordhelpIntent = (app) =>{
   actionMap.set(SYNONYM_OTHER_INTENT,synonymOtherIntent);
   actionMap.set(ANTONYM_INTENT,antonymIntent);
   actionMap.set(WORD_HELP_INTENT,wordhelpIntent);
+  actionMap.set(WELCOME_INTENT,welcomeIntent);
+  actionMap.set(DICT_INTENT,dictionaryIntent);
   app.handleRequest(actionMap);
 });

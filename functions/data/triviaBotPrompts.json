@@ -45,5 +45,7 @@
   "WRONG_ANSWER_PROMPTS_2" : [ "The right answer is %s.", "Actually, it's %s.", "I was looking for %s.", "I wish you had said %s.", "The answer I wanted was %s.", "It's %s. Better luck next time." ],
   "YOUR_SCORE_PROMPTS" : [ "Looks like your score is %s.", "Your score is %s." ],
   "MEANING_INTENT_PROMPTS" :["The Meaning of the word is %s","Meaning of is %s","Meaning is %s"],
-  "WORD_QUIT_PROMPTS" : [ "I had so much fun! Hope you did too! Bye!", "Thanks for trying! Come back again soon!", "Bye! Hope I can see you soon!" ]
+  "WORD_QUIT_PROMPTS" : [ "I had so much fun! Hope you did too! Bye!", "Thanks for trying! Come back again soon!", "Bye! Hope I can see you soon!" ],
+  "WELCOME_PROMPTS" :["Would you like to play game or Would you like to go to dictionary","These are some suggested actions"],
+  "SUGGEST_PROMPTS":["you can choose from the following options","These are some of suggested options available"]
 }

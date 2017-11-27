@@ -97,6 +97,10 @@ const MEANING_INTENT = 'meaning';
 const SYNONYM_INTENT = 'synonym';
 const SYNONYM_OTHER_INTENT = 'synonymOther';
 const SYNONYM_OTHER_NO_INTENT='synonym.other.no';
+const MEANING_OTHER_INTENT = 'meaningOther';
+const MEANING_OTHER_NO_INTENT = 'meaning.other.no';
+const ANTONYM_OTHER_INTENT='antonymOther';
+const ANTONYM_OTHER_NO_INTENT='antonym.other.no';
 const ANTONYM_INTENT = 'antonym';
 const WORD_HELP_INTENT = "word.help";
 const WELCOME_INTENT = 'input.welcome';
@@ -1368,24 +1372,37 @@ const meaningIntent = (app) =>
           console.log('inside wordnet lookup function');
           if(err)
           {
-            sendResponse("This word is not in my dictionary yet");
+            ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+            app.ask(app
+              .buildRichResponse()
+              .addSimpleResponse(ssmlResponse.toString())
+              .addSuggestions(["play game","dictionary"]))
           } 
-          console.log(data[0]['glossary']);
-          ssmlResponse.say(data[0]['glossary']+". Would you like to know the synonym of the word as well?");
+          else
+          {
+            console.log(data[0]['glossary']);
+            ssmlResponse.say(data[0]['glossary']+". Would you like to know the synonym of the word as well?");
 
-          app.setContext(Synonyn_CONTEXT);
-          app.data.word=word
-          console.log(app.data);
-          app.ask(app
-            .buildRichResponse()
-            .addSimpleResponse(ssmlResponse.toString())
-            .addSuggestions([utils.YES, utils.NO]));
+            app.setContext(Synonyn_CONTEXT);
+            app.data.word=word
+            console.log(app.data);
+           app.ask(app
+              .buildRichResponse()
+              .addSimpleResponse(ssmlResponse.toString())
+              .addSuggestions([utils.YES, utils.NO]));
           //sendResponse(data[0]['glossary']);
-          console.log('response sent');
+            console.log('response sent');
+           }
         });
     }
     else
-    sendResponse("This word is not in my dictionary yet");
+    {
+      ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["play game","dictionary"]))
+    }
 };
 
 //this is used to find synonym after one step of either meaning or synonym
@@ -1398,7 +1415,11 @@ const synonymOtherIntent = (app) =>
     wordnet.lookup(word, function(err, definitions) {
       if(err)
       {
-        sendResponse("This word is not in my dictionary yet");
+        ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        app.ask(app
+          .buildRichResponse()
+          .addSimpleResponse(ssmlResponse.toString())
+          .addSuggestions(["play game","dictionary","help"]))
       }
       var a="";
       app.data.word=word
@@ -1410,7 +1431,11 @@ const synonymOtherIntent = (app) =>
     });
   }
   else {
-    sendResponse("This word is not in my dictionary yet");
+    ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestions(["play game","dictionary"]))
   }
 }
 
@@ -1421,7 +1446,12 @@ const synonymIntent = (app) =>{
     wordnet.lookup(word, function(err, definitions) {
       if(err)
       {
-        sendResponse("This word is not in my dictionary yet");
+        ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        app.ask(app
+          .buildRichResponse()
+          .addSimpleResponse(ssmlResponse.toString())
+          .addSuggestions(["play game","dictionary","help"])
+        )
       }
       var a="";
       app.data.word=word
@@ -1433,7 +1463,12 @@ const synonymIntent = (app) =>{
     });
   }
   else {
-    sendResponse("This word is not in my dictionary yet");
+    ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestions(["play game","dictionary","help"])
+    )
   }
 }
 
@@ -1461,11 +1496,20 @@ const antonymIntent =(app) =>{
           .addSuggestions([utils.YES, utils.NO]));
       }
       else{
-        sendResponse("There is no antonyms for the word "+word+" in my dictionary")
+        ssmlResponse.say("There is no antonyms for the word "+word+" in my dictionary"+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        app.ask(app
+          .buildRichResponse()
+          .addSimpleResponse(ssmlResponse.toString())
+          .addSuggestions(["dictionary", "play game"]));
       }
     }
   else{
-    sendResponse("This word is not in my dictionary");
+    ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestions(["play game","dictionary"])
+    )
   }
 }
 
@@ -1475,12 +1519,12 @@ const wordhelpIntent = (app) =>{
   app.ask(app
     .buildRichResponse()
     .addSimpleResponse(ssmlResponse.toString())
-    .addSuggestions(["play game"]));
+    .addSuggestions(["play game","help"]));
 }
 
 const welcomeIntent = (app) =>{
   var ssmlResponse = new Ssml();
-  ssmlResponse.say("Would you like to play game or Would you like to go to dictionary");
+  ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WELCOME_PROMPTS));
   app.ask(app
     .buildRichResponse()
     .addSimpleResponse(ssmlResponse.toString())
@@ -1525,7 +1569,18 @@ const WordExitNoIntent= (app) =>{
 const synonymOtherNoIntent=(app) =>{
   var ssmlResponse = new Ssml();
   ssmlResponse.say("Okay taking back to dictionary instead");
-  app.tell(ssmlResponse.toString());
+  dictionaryIntent(app);
+}
+
+const meaningOtherNoIntent =(app) =>{
+  dictionaryIntent(app);
+}
+
+const antonymOtherIntent =(app) =>{
+  dictionaryIntent(app)
+}
+
+const antonymOtherNoIntent =(app) =>{
   dictionaryIntent(app);
 }
   // Handle multi-modal suggestion chips selection
@@ -1621,5 +1676,7 @@ const synonymOtherNoIntent=(app) =>{
   actionMap.set(WORD_EXIT_YES_INTENT,wordExitYesIntent);
   actionMap.set(WORD_EXIT_NO_INTENT,WordExitNoIntent);
   actionMap.set(SYNONYM_OTHER_NO_INTENT,synonymOtherNoIntent);
+  actionMap.set(MEANING_OTHER_NO_INTENT,meaningOtherNoIntent);
+  actionMap.set(ANTONYM_OTHER_INTENT,antonymOtherIntent);
   app.handleRequest(actionMap);
 });

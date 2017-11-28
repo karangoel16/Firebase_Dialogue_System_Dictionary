@@ -117,6 +117,7 @@ const GAME_TITLE = 'The Word Game';
 const QUESTIONS_PER_GAME = 4;
 
 // Firebase data keys
+const DATABASE_RESULT_USER='results/'
 const DATABASE_PATH_USERS = 'users/';
 const DATABASE_PATH_DICTIONARY = 'dictionary/';
 const DATABASE_QUESTIONS = 'questions';
@@ -130,6 +131,7 @@ const DATABASE_SCORES = 'scores';
 const DATABASE_VISITS = 'visits';
 const DATABASE_ANSWERS = 'answers';
 const DATABASE_FOLLOW_UPS = 'followUps';
+const DATABASE_RESPONSE_CHECK ="check";
 
 const theme = THEME_TYPES.TRIVIA_TEACHER_THEME;
 const AUDIO_BASE_URL = `${HOSTING_URL}/audio/`;
@@ -420,7 +422,8 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
             [DATABASE_LOWEST_SCORE]: score,
             [DATABASE_AVERAGE_SCORE]: score,
             [DATABASE_TOTAL_SCORE]: score,
-            [DATABASE_SCORES]: 1
+            [DATABASE_SCORES]: 1,
+            [DATABASE_RESPONSE_CHECK]:0
           });
         }
       });
@@ -1363,7 +1366,20 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 
 const meaningIntent = (app) =>
 {
-    let ssmlResponse= new Ssml();
+  let ssmlResponse= new Ssml();
+  if(request.body["result"]["parameters"]["meaning"].length==0)
+  {
+    console.log(request.body)
+    console.log("I understood it as meaning of word")
+    ssmlResponse.say("I am sorry, I am having hard time to understand you!");
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestions(["main menu","dictionary"]))
+      dictionaryIntent(app)
+  }
+  else
+  {
     console.log(request.body["result"]["resolvedQuery"]);
     var word = request.body["result"]["parameters"]["Word"];
     if(word!=null)
@@ -1382,8 +1398,8 @@ const meaningIntent = (app) =>
           {
             console.log(data[0]['glossary']);
             ssmlResponse.say(data[0]['glossary']+". Would you like to know the synonym of the word as well?");
-
             app.setContext(Synonyn_CONTEXT);
+            //app.setContext("word");
             app.data.word=word
             console.log(app.data);
            app.ask(app
@@ -1403,12 +1419,14 @@ const meaningIntent = (app) =>
         .addSimpleResponse(ssmlResponse.toString())
         .addSuggestions(["play game","dictionary"]))
     }
+  }
 };
 
 //this is used to find synonym after one step of either meaning or synonym
 
 const synonymOtherIntent = (app) =>
 {
+  var ssmlResponse = new Ssml();
   var word = (app.data.word===undefined?null:app.data.word);//request.body["result"]["parameters"]["Word"];;
   if(word!=null)
   {
@@ -1422,14 +1440,20 @@ const synonymOtherIntent = (app) =>
           .addSuggestions(["play game","dictionary","help"]))
       }
       var a="";
-      app.data.word=word
+      //app.data.word=word
       definitions[0].meta.words.forEach(function(word)
       {
         a+=word.word+"; ";
       })
-      sendResponse(a);
+      ssmlResponse.say("The Synonym of "+word+a);
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["play game","dictionary","help"]))
     });
   }
+
+
   else {
     ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
     app.ask(app
@@ -1437,6 +1461,13 @@ const synonymOtherIntent = (app) =>
       .addSimpleResponse(ssmlResponse.toString())
       .addSuggestions(["play game","dictionary"]))
   }
+}
+
+const synonymOtherNoIntent=(app) =>{
+  console.log("In synonym intent");
+  var ssmlResponse = new Ssml();
+  //ssmlResponse.say("Okay taking back to dictionary instead");
+  dictionaryIntent(app);
 }
 
 const synonymIntent = (app) =>{
@@ -1533,6 +1564,7 @@ const welcomeIntent = (app) =>{
 }
 
 const dictionaryIntent = (app) =>{
+  database();
   var ssmlResponse =new Ssml();
   ssmlResponse.say("I can tell meaning, synonyms or antonyms of the word");
   app.ask(app
@@ -1541,7 +1573,22 @@ const dictionaryIntent = (app) =>{
     .addSuggestions(["meaning of ace","antonym of ace","synonym of ace","help"])
   )
 }
-
+var database = ()=>{
+  firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId)
+  .once('value', (data) => {
+      //console.log(data.val())
+    if (data && data.val()) {
+      console.log("val"+data.val()[DATABASE_RESPONSE_CHECK].toString())
+      firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId).update({
+        [DATABASE_RESPONSE_CHECK]:data.val()[DATABASE_RESPONSE_CHECK]+1
+      });
+    } else {
+      firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId).update({
+        [DATABASE_RESPONSE_CHECK]:0
+      });
+    }
+  });
+}
 const wordExitIntent = (app) =>{
   var ssmlResponse = new Ssml();
   ssmlResponse.say("Would you like to leave?");
@@ -1566,11 +1613,6 @@ const WordExitNoIntent= (app) =>{
   dictionaryIntent(app);
 }
 
-const synonymOtherNoIntent=(app) =>{
-  var ssmlResponse = new Ssml();
-  ssmlResponse.say("Okay taking back to dictionary instead");
-  dictionaryIntent(app);
-}
 
 const meaningOtherNoIntent =(app) =>{
   dictionaryIntent(app);
@@ -1668,6 +1710,7 @@ const antonymOtherNoIntent =(app) =>{
   actionMap.set(MEANING_INTENT,meaningIntent);
   actionMap.set(SYNONYM_INTENT,synonymIntent);
   actionMap.set(SYNONYM_OTHER_INTENT,synonymOtherIntent);
+  actionMap.set(SYNONYM_OTHER_NO_INTENT,synonymOtherNoIntent);
   actionMap.set(ANTONYM_INTENT,antonymIntent);
   actionMap.set(WORD_HELP_INTENT,wordhelpIntent);
   actionMap.set(WELCOME_INTENT,welcomeIntent);
@@ -1675,8 +1718,6 @@ const antonymOtherNoIntent =(app) =>{
   actionMap.set(WORD_EXIT_INTENT,wordExitIntent);
   actionMap.set(WORD_EXIT_YES_INTENT,wordExitYesIntent);
   actionMap.set(WORD_EXIT_NO_INTENT,WordExitNoIntent);
-  actionMap.set(SYNONYM_OTHER_NO_INTENT,synonymOtherNoIntent);
-  actionMap.set(MEANING_OTHER_NO_INTENT,meaningOtherNoIntent);
   actionMap.set(ANTONYM_OTHER_INTENT,antonymOtherIntent);
   app.handleRequest(actionMap);
 });

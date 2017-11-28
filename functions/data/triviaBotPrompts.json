@@ -47,5 +47,5 @@
   "MEANING_INTENT_PROMPTS" :["The Meaning of the word is %s","Meaning of is %s","Meaning is %s"],
   "WORD_QUIT_PROMPTS" : [ "I had so much fun! Hope you did too! Bye!", "Thanks for trying! Come back again soon!", "Bye! Hope I can see you soon!" ],
   "WELCOME_PROMPTS" :["Would you like to play game or Would you like to go to dictionary","These are some suggested actions"],
-  "SUGGEST_PROMPTS":["you can choose from the following options","These are some of suggested options available"]
+  "SUGGEST_PROMPTS":["You can even choose from the following options","These are some of suggested options available"]
 }

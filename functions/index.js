@@ -132,6 +132,7 @@ const DATABASE_VISITS = 'visits';
 const DATABASE_ANSWERS = 'answers';
 const DATABASE_FOLLOW_UPS = 'followUps';
 const DATABASE_RESPONSE_CHECK ="check";
+const DATABASE_RESPONSE_ENGAGEMENT="engagement";
 
 const theme = THEME_TYPES.TRIVIA_TEACHER_THEME;
 const AUDIO_BASE_URL = `${HOSTING_URL}/audio/`;
@@ -1366,6 +1367,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 
 const meaningIntent = (app) =>
 {
+  database(app);
   let ssmlResponse= new Ssml();
   if(request.body["result"]["parameters"]["meaning"].length==0)
   {
@@ -1426,6 +1428,7 @@ const meaningIntent = (app) =>
 
 const synonymOtherIntent = (app) =>
 {
+  database(app);
   var ssmlResponse = new Ssml();
   var word = (app.data.word===undefined?null:app.data.word);//request.body["result"]["parameters"]["Word"];;
   if(word!=null)
@@ -1464,6 +1467,7 @@ const synonymOtherIntent = (app) =>
 }
 
 const synonymOtherNoIntent=(app) =>{
+  database(app);
   console.log("In synonym intent");
   var ssmlResponse = new Ssml();
   //ssmlResponse.say("Okay taking back to dictionary instead");
@@ -1471,6 +1475,7 @@ const synonymOtherNoIntent=(app) =>{
 }
 
 const synonymIntent = (app) =>{
+  database(app);
   var word = request.body["result"]["parameters"]["Word"];;
   if(word!=null)
   {
@@ -1484,13 +1489,21 @@ const synonymIntent = (app) =>{
           .addSuggestions(["play game","dictionary","help"])
         )
       }
-      var a="";
-      app.data.word=word
-      definitions[0].meta.words.forEach(function(word)
+      else
       {
-        a+=word.word+"; ";
-      })
-      sendResponse(a);
+        var a="";
+        app.data.word=word
+        definitions[0].meta.words.forEach(function(word)
+        {
+         a+=word.word+"; ";
+       })
+       ssmlResponse.say(a);
+       app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["play game","dictionary","help"])
+        )
+      }
     });
   }
   else {
@@ -1504,6 +1517,7 @@ const synonymIntent = (app) =>{
 }
 
 const antonymIntent =(app) =>{
+  database(app);
   let ssmlResponse= new Ssml();
   var word = request.body["result"]["parameters"]["Word"];
 
@@ -1545,6 +1559,7 @@ const antonymIntent =(app) =>{
 }
 
 const wordhelpIntent = (app) =>{
+  database(app);
   var ssmlResponse = new Ssml();
   ssmlResponse.say("You can either know meaning of the word or synonym of word as well as antonym, or you could say play game to play an interactive game at any moment");
   app.ask(app
@@ -1554,6 +1569,8 @@ const wordhelpIntent = (app) =>{
 }
 
 const welcomeIntent = (app) =>{
+  app.data.check=app.data.check===undefined?0:app.data.check;
+  database(app);
   var ssmlResponse = new Ssml();
   ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WELCOME_PROMPTS));
   app.ask(app
@@ -1564,7 +1581,8 @@ const welcomeIntent = (app) =>{
 }
 
 const dictionaryIntent = (app) =>{
-  database();
+  app.data.check=app.data.check===undefined?0:app.data.check+1;
+  database(app);
   var ssmlResponse =new Ssml();
   ssmlResponse.say("I can tell meaning, synonyms or antonyms of the word");
   app.ask(app
@@ -1573,18 +1591,20 @@ const dictionaryIntent = (app) =>{
     .addSuggestions(["meaning of ace","antonym of ace","synonym of ace","help"])
   )
 }
-var database = ()=>{
+var database = (app)=>{
   firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId)
   .once('value', (data) => {
       //console.log(data.val())
     if (data && data.val()) {
       console.log("val"+data.val()[DATABASE_RESPONSE_CHECK].toString())
       firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId).update({
-        [DATABASE_RESPONSE_CHECK]:data.val()[DATABASE_RESPONSE_CHECK]+1
+        [DATABASE_RESPONSE_CHECK]:app.data.check===undefined?0:app.data.check,
+        [DATABASE_RESPONSE_ENGAGEMENT]:data.val()[DATABASE_RESPONSE_ENGAGEMENT]+1
       });
     } else {
       firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId).update({
-        [DATABASE_RESPONSE_CHECK]:0
+        [DATABASE_RESPONSE_CHECK]:0,
+        [DATABASE_RESPONSE_ENGAGEMENT]:0
       });
     }
   });
@@ -1600,6 +1620,7 @@ const wordExitIntent = (app) =>{
 }
 
 const wordExitYesIntent =(app)=>{
+  database(app);
   var ssmlResponse = new Ssml();
   ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WORD_QUIT_PROMPTS)+".Please fill the feedback of how did I perform.");
   app.ask(app
@@ -1610,19 +1631,23 @@ const wordExitYesIntent =(app)=>{
 }
 
 const WordExitNoIntent= (app) =>{
+  database(app);
   dictionaryIntent(app);
 }
 
 
 const meaningOtherNoIntent =(app) =>{
+  database(app);
   dictionaryIntent(app);
 }
 
 const antonymOtherIntent =(app) =>{
+  database(app);
   dictionaryIntent(app)
 }
 
 const antonymOtherNoIntent =(app) =>{
+  database(app);
   dictionaryIntent(app);
 }
   // Handle multi-modal suggestion chips selection

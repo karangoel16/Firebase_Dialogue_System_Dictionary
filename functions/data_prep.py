@@ -56,7 +56,7 @@ class database:
                 ans=[]
                 if(map.get(word)!=None and len(map.get(word)[1]))!=0:
                     question.append(i+" "+word)#this is to prepare sentence
-                    ans.append(random.choice(map.get(word)[1])) #this is to put correct answer in the question
+                    ans.append("|".join(map.get(word)[1])) #this is to put correct answer in the question
                     for j in random.sample(l,2):
                         ans.append(self.word[j])
                     answer.append(ans)
@@ -65,7 +65,7 @@ class database:
                 ans=[]
                 if(map.get(word)!=None and len(map.get(word)[0]))!=0:
                     question.append(i+" "+word)#this is to prepare sentence
-                    ans.append(random.choice(map.get(word)[0])) #this is to put correct answer in the question
+                    ans.append("|".join(map.get(word)[0])) #this is to put correct answer in the question
                     for j in random.sample(l,2):
                         ans.append(self.word[j])
                     answer.append(ans)

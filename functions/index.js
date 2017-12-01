@@ -1475,6 +1475,7 @@ const synonymOtherNoIntent=(app) =>{
 }
 
 const synonymIntent = (app) =>{
+  var ssmlResponse = new Ssml();
   database(app);
   var word = request.body["result"]["parameters"]["Word"];;
   if(word!=null)

@@ -108,6 +108,8 @@ const DICT_INTENT = "dictionary";
 const WORD_EXIT_INTENT ="word.quit";
 const WORD_EXIT_YES_INTENT="word.quit.yes";
 const WORD_EXIT_NO_INTENT ="word.quit.no";
+const WORD_MIXED_INTENT = "mixed.intent";
+//const NO_INPUT="no.input";
 const TTS_DELAY = '500ms';
 
 const MAX_PREVIOUS_QUESTIONS = 100;
@@ -134,7 +136,7 @@ const DATABASE_FOLLOW_UPS = 'followUps';
 const DATABASE_RESPONSE_CHECK ="check";
 const DATABASE_RESPONSE_ENGAGEMENT="engagement";
 
-const theme = THEME_TYPES.TRIVIA_TEACHER_THEME;
+const theme = THEME_TYPES.TRIVIA_TRIVIA_BOT_THEME;
 const AUDIO_BASE_URL = `${HOSTING_URL}/audio/`;
 
 // Cloud Functions for Firebase entry point
@@ -1365,20 +1367,31 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     askQuestion(ssmlResponse, app.data.questionPrompt, app.data.selectedAnswers);
   };
 
+const meaninghelper =(word) =>
+{
+  
+}
+
 const meaningIntent = (app) =>
 {
   database(app);
   let ssmlResponse= new Ssml();
   if(request.body["result"]["parameters"]["meaning"].length==0)
   {
-    console.log(request.body)
-    console.log("I understood it as meaning of word")
-    ssmlResponse.say("I am sorry, I am having hard time to understand you!");
-    app.ask(app
-      .buildRichResponse()
-      .addSimpleResponse(ssmlResponse.toString())
-      .addSuggestions(["main menu","dictionary"]))
-      dictionaryIntent(app)
+    var word = request.body["result"]["parameters"]["Word"];
+    if(word==null)
+    {
+      dictionaryIntent(app);
+    }
+    else{
+      console.log(request.body)
+      console.log("I understood it as meaning of word")
+      ssmlResponse.say("I am sorry, I am having hard time to understand you! Could you please repeat again");
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["meaning of vapid","define vapid"]));
+    }
   }
   else
   {
@@ -1455,8 +1468,6 @@ const synonymOtherIntent = (app) =>
         .addSuggestions(["play game","dictionary","help"]))
     });
   }
-
-
   else {
     ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
     app.ask(app
@@ -1475,12 +1486,34 @@ const synonymOtherNoIntent=(app) =>{
 }
 
 const synonymIntent = (app) =>{
+
   var ssmlResponse = new Ssml();
   database(app);
-  var word = request.body["result"]["parameters"]["Word"];;
-  if(word!=null)
+  console.log(request.body)
+  if(request.body["result"]["parameters"]["Synonym"]===undefined)
   {
-    wordnet.lookup(word, function(err, definitions) {
+    var word = request.body["result"]["parameters"]["Word"];
+    if(word==null)
+    {
+      dictionaryIntent(app)
+    }
+    else
+    {
+      console.log(request.body)
+      console.log("I understood it as meaning of word")
+      ssmlResponse.say("I am sorry, I am having hard time to understand you! Could you please repeat again");
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["synonym of vapid","similar to vapid"]))
+    }
+  }
+  else
+  {
+    var word = request.body["result"]["parameters"]["Word"];;
+    if(word!=null)
+    {
+      wordnet.lookup(word, function(err, definitions) {
       if(err)
       {
         ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
@@ -1496,34 +1529,54 @@ const synonymIntent = (app) =>{
         app.data.word=word
         definitions[0].meta.words.forEach(function(word)
         {
-         a+=word.word+"; ";
+          if(app.data.word!==word)
+            a+=word.word+"; ";
        })
-       ssmlResponse.say(a);
+       ssmlResponse.say("The synonym of "+word+" is "+a);
        app.ask(app
         .buildRichResponse()
         .addSimpleResponse(ssmlResponse.toString())
         .addSuggestions(["play game","dictionary","help"])
         )
       }
-    });
-  }
-  else {
-    ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
-    app.ask(app
-      .buildRichResponse()
-      .addSimpleResponse(ssmlResponse.toString())
-      .addSuggestions(["play game","dictionary","help"])
-    )
+      });
+    }
+    else {
+      ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["play game","dictionary","help"])
+      )
+    }
   }
 }
 
 const antonymIntent =(app) =>{
   database(app);
   let ssmlResponse= new Ssml();
-  var word = request.body["result"]["parameters"]["Word"];
-
-  if(word!=null)
+  if(request.body["result"]["parameters"]["antonyms"]===undefined)
   {
+    var word = request.body["result"]["parameters"]["Word"];
+    if(word==null)
+    {
+        dictionaryIntent(app)
+    }
+    else{
+      console.log(request.body)
+      console.log("I understood it as meaning of word")
+      ssmlResponse.say("I am sorry, I am having hard time to understand you! Could you please repeat again");
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["antonym of vapid","opposite of vapid"]))
+    }
+  }
+  else
+  {
+    var word = request.body["result"]["parameters"]["Word"];
+    if(word!=null)
+    {
       console.log(word)
       var antonyms=""
       wn.antonyms(word).forEach(function(word){
@@ -1535,7 +1588,7 @@ const antonymIntent =(app) =>{
       if(antonyms.length)
       {
         console.log(antonyms)
-        ssmlResponse.say(antonyms);
+        ssmlResponse.say("The antonyms of the word "+word+" are"+antonyms);
         app.ask(app
           .buildRichResponse()
           .addSimpleResponse(ssmlResponse.toString())
@@ -1549,16 +1602,16 @@ const antonymIntent =(app) =>{
           .addSuggestions(["dictionary", "play game"]));
       }
     }
-  else{
-    ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
-    app.ask(app
-      .buildRichResponse()
-      .addSimpleResponse(ssmlResponse.toString())
-      .addSuggestions(["play game","dictionary"])
-    )
+    else{
+      ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      app.ask(app
+        .buildRichResponse()
+        .addSimpleResponse(ssmlResponse.toString())
+        .addSuggestions(["play game","dictionary"])
+      )
+    }
   }
 }
-
 const wordhelpIntent = (app) =>{
   database(app);
   var ssmlResponse = new Ssml();
@@ -1571,21 +1624,32 @@ const wordhelpIntent = (app) =>{
 
 const welcomeIntent = (app) =>{
   app.data.check=app.data.check===undefined?0:app.data.check;
-  database(app);
   var ssmlResponse = new Ssml();
-  ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WELCOME_PROMPTS));
-  app.ask(app
-    .buildRichResponse()
-    .addSimpleResponse(ssmlResponse.toString())
-    .addSuggestions(["play game","dictionary"])
-  )
+  if(app.data.check==0)
+  {
+    ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.TUTORIAL_PROMPTS));
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestions(["play game","dictionary"]))
+  }
+  else
+  {
+    database(app);
+    ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WELCOME_PROMPTS));
+    app.ask(app
+      .buildRichResponse()
+      .addSimpleResponse(ssmlResponse.toString())
+      .addSuggestions(["play game","dictionary"])
+    )
+  }
 }
 
 const dictionaryIntent = (app) =>{
   app.data.check=app.data.check===undefined?0:app.data.check+1;
   database(app);
   var ssmlResponse =new Ssml();
-  ssmlResponse.say("I can tell meaning, synonyms or antonyms of the word");
+  ssmlResponse.say(PROMPT_TYPES.DICTIONARY_PROMPT);
   app.ask(app
     .buildRichResponse()
     .addSimpleResponse(ssmlResponse.toString())
@@ -1610,6 +1674,7 @@ var database = (app)=>{
     }
   });
 }
+
 const wordExitIntent = (app) =>{
   var ssmlResponse = new Ssml();
   ssmlResponse.say("Would you like to leave?");
@@ -1651,6 +1716,18 @@ const antonymOtherNoIntent =(app) =>{
   database(app);
   dictionaryIntent(app);
 }
+
+/*
+const noInput =(app) =>{
+  var ssmlResponse = Ssml();
+  if (app.getRepromptCount() === 0) {
+    app.ask(`What was that?`);
+  } else if (app.getRepromptCount() === 1) {
+    app.ask(`Sorry I didn't catch that. Could you repeat yourself?`);
+  } else if (app.isFinalReprompt()) {
+    app.tell(`Okay let's try this again later.`);
+  } 
+}*/
   // Handle multi-modal suggestion chips selection
   const listIntent = (app) => {
     logger.info(logObject('trivia', 'listIntent', {
@@ -1679,6 +1756,11 @@ const antonymOtherNoIntent =(app) =>{
     }));
     valueIntent(app, answer, null);
   };
+
+  const mixedWordIntent = (app) =>{
+    sendResponse("You have successfully tested this module now write functions for this one");
+  }
+
 
   function sendResponse (responseToUser) {
   // if the response is a string send it as a response to the user
@@ -1745,5 +1827,7 @@ const antonymOtherNoIntent =(app) =>{
   actionMap.set(WORD_EXIT_YES_INTENT,wordExitYesIntent);
   actionMap.set(WORD_EXIT_NO_INTENT,WordExitNoIntent);
   actionMap.set(ANTONYM_OTHER_INTENT,antonymOtherIntent);
+  actionMap.set(WORD_MIXED_INTENT,mixedWordIntent);
+  //actionMap.set(NO_INPUT,noInput);
   app.handleRequest(actionMap);
 });

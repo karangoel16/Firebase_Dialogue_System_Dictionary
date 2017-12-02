@@ -47,5 +47,6 @@
   "WORD_QUIT_PROMPTS" : [ "I had so much fun! Hope you did too! Bye!", "Thanks for trying! Come back again soon!", "Bye! Hope I can see you soon!" ],
   "WELCOME_PROMPTS" :["Would you like to play game or Would you like to go to dictionary","These are some suggested actions"],
   "SUGGEST_PROMPTS":["you can choose from the following options","These are some of suggested options available"],
-  "TUTORIAL_PROMPTS":["Here in this I can help you with the dictionary to grow your vocabulary, or play game, You can ask for help anytime when you do not understand anything in this app, we have also included suggestions in the boxes on the screen, but those are just suggestion"]
+  "TUTORIAL_PROMPTS":["Here in this I can help you with the dictionary to grow your vocabulary, or play game, You can ask for help anytime when you do not understand anything in this app, we have also included suggestions in the boxes on the screen, but those are just suggestion"],
+  "DICTIONARY_PROMPT":["Okay, you are in dictionary , now you can know about the meaning, synonym or antonym "]
 }

@@ -87,7 +87,8 @@ const PROMPT_TYPES = {
   WELCOME_PROMPTS :'WELCOME_PROMPTS',
   SUGGESTED_PROMPTS: "SUGGEST_PROMPTS",
   TUTORIAL_PROMPTS: 'TUTORIAL_PROMPTS',
-  DICTIONARY_PROMPT:'DICTIONARY_PROMPT'
+  DICTIONARY_PROMPT:'DICTIONARY_PROMPT',
+  NOT_FOUND:"NOT_FOUND"
 };
 
 const AUDIO_TYPES = {
@@ -178,7 +179,28 @@ const Themes = class {
     }
     return `Missing prompts: ${type}`;
   }
+
+  getItemisedPrompt(theme,type,lastPrompt,index)
+  {
+    //here the index is for the index of the prompt you want to get so that we can provide tapered prompt in this code
+    logger.debug(logObject('themes', 'getRandomPrompt', {
+      info: 'Get random prompt',
+      theme: theme,
+      type: type,
+      lastPrompt: lastPrompt
+    }));
+    if(theme && type)
+    {
+      const prompts=this.getPrompts(theme,type);
+      if(prompts && index)
+      {
+        return prompts[index % array.length];
+      }
+    }
+    return `Missing prompts: ${type}`;
+    }
 };
+
 
 module.exports = {
   AUDIO_TYPES: AUDIO_TYPES,

@@ -1403,7 +1403,7 @@ const meaningIntent = (app) =>
           console.log('inside wordnet lookup function');
           if(err)
           {
-            ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+            ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+"\n"+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
@@ -1428,11 +1428,12 @@ const meaningIntent = (app) =>
     }
     else
     {
-      ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+" "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
       app.ask(app
         .buildRichResponse()
         .addSimpleResponse(ssmlResponse.toString())
-        .addSuggestions(["play game","dictionary"]))
+        .addSuggestions(["play game","dictionary"])
+      )
     }
   }
 };
@@ -1449,7 +1450,7 @@ const synonymOtherIntent = (app) =>
     wordnet.lookup(word, function(err, definitions) {
       if(err)
       {
-        ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+" "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
           .buildRichResponse()
           .addSimpleResponse(ssmlResponse.toString())
@@ -1469,7 +1470,7 @@ const synonymOtherIntent = (app) =>
     });
   }
   else {
-    ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+    ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+" "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
     app.ask(app
       .buildRichResponse()
       .addSimpleResponse(ssmlResponse.toString())
@@ -1516,7 +1517,7 @@ const synonymIntent = (app) =>{
       wordnet.lookup(word, function(err, definitions) {
       if(err)
       {
-        ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+" "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
           .buildRichResponse()
           .addSimpleResponse(ssmlResponse.toString())
@@ -1542,7 +1543,7 @@ const synonymIntent = (app) =>{
       });
     }
     else {
-      ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      ssmlResponse.say(getRandomPromp(PROMPT_TYPES.NOT_FOUND)+" "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
       app.ask(app
         .buildRichResponse()
         .addSimpleResponse(ssmlResponse.toString())
@@ -1603,7 +1604,7 @@ const antonymIntent =(app) =>{
       }
     }
     else{
-      ssmlResponse.say("This word is not in my dictionary yet, "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+" "+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
       app.ask(app
         .buildRichResponse()
         .addSimpleResponse(ssmlResponse.toString())
@@ -1649,7 +1650,7 @@ const dictionaryIntent = (app) =>{
   app.data.check=app.data.check===undefined?0:app.data.check+1;
   database(app);
   var ssmlResponse =new Ssml();
-  ssmlResponse.say(PROMPT_TYPES.DICTIONARY_PROMPT);
+  ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.DICTIONARY_PROMPT));
   app.ask(app
     .buildRichResponse()
     .addSimpleResponse(ssmlResponse.toString())

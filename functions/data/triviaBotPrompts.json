@@ -49,6 +49,6 @@
   "WELCOME_PROMPTS" :["Would you like to play game or Would you like to go to dictionary","These are some suggested actions"],
   "SUGGEST_PROMPTS":["You can even choose from the following options","These are some of suggested options available"],
   "TUTORIAL_PROMPTS":["Here in this I can help you with the dictionary to grow your vocabulary, or play game, You can ask for help anytime when you do not understand anything in this app, we have also included suggestions in the boxes on the screen, but those are just suggestion"],
-  "DICTIONARY_PROMPT":["Okay, you are in dictionary , now you can know about the meaning, synonym or antonym.\n for example you can say meaning of ace and system will reply for the same, we have added suggesstions in the menu as well ","Okay, you are in dictionary module","Okay"],
+  "DICTIONARY_PROMPT":["Okay, you are in dictionary , now you can know about the meaning, synonym or antonym.\n For example you can say meaning of ace and I will reply for the same.\n we have added suggesstions in the menu as well ","Okay, you are in dictionary module, Hope this helps","Okay"],
   "NOT_FOUND":["This word is not in my dictionary yet","I failed to find this word in my dictionary","I am still learning and getting better will be able to give you better result soon"]
 }

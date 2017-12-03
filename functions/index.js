@@ -140,6 +140,8 @@ const DATABASE_RESPONSE_ENGAGEMENT="engagement";
 const DATABASE_RESPONSE_WELCOME="welcome";
 const DATABASE_RESPONSE_ANTONYM="antonym";
 const DATABASE_RESPONSE_SYNONYM="synonym";
+const DATABASE_RESPONSE_MEANING="meaning";
+const DATABASE_RESPONSE_REPAIR = "repair";
 
 const theme = THEME_TYPES.TRIVIA_TRIVIA_BOT_THEME;
 const AUDIO_BASE_URL = `${HOSTING_URL}/audio/`;
@@ -1421,8 +1423,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 }*/
   const meaningIntent = (app) =>
   {
+    app.data.meaning=app.data.meaning===undefined?0:app.data.meaning+1;
     database(app);
     let ssmlResponse= new Ssml();
+    let nextResponse = new Ssml();
     if(request.body["result"]["parameters"]["meaning"].length==0)
     {
       var word = request.body["result"]["parameters"]["Word"];
@@ -1461,34 +1465,39 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
             else
             {
               console.log(data[0]['glossary']);
-              ssmlResponse.say("The meaning of "+word+"is ")
+              ssmlResponse.say("The meaning of "+word+" is ")
+              data[0]['glossary'].split(";").forEach(function(def){
+                ssmlResponse.say(def+", ");
+                ssmlResponse.pause(TTS_DELAY);
+              });
+              ssmlResponse.say(". ");
               switch(Math.floor(Math.random()*2))
               {
                 case 0:
-                  ssmlResponse.say(data[0]['glossary']+". ");
-                  ssmlResponse.pause(TTS_DELAY);
-                  ssmlResponse.say("Would you like to know the synonym of the word as well?");
+                  nextResponse.say("Would you like to know the synonym of the word as well?");
                   app.setContext(Synonyn_CONTEXT);
                   break;
                 case 1:
-                  ssmlResponse.say(data[0]['glossary']+" Would you like to know the antonym of the word as well?")
+                  nextResponse.say(" Would you like to know the antonym of the word as well?")
                   app.setContext(Antonym_Context);
               }
               //app.setContext("word");
               app.data.word=word
               console.log(app.data);
-            app.ask(app
-                .buildRichResponse()
-                .addSimpleResponse(ssmlResponse.toString())
-                .addSuggestions([utils.YES, utils.NO]));
-            //sendResponse(data[0]['glossary']);
-              console.log('response sent');
+              app.ask(app
+                  .buildRichResponse()
+                  .addSimpleResponse(ssmlResponse.toString())
+                  .addSimpleResponse(nextResponse.toString())
+                  .addSuggestions([utils.YES, utils.NO]));
+              //sendResponse(data[0]['glossary']);
+                console.log('response sent');
             }
           });
       }
       else
       {
         ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
+        ssmlResponse.pause(TTS_DELAY);
         ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
           .buildRichResponse()
@@ -1503,8 +1512,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 
   const synonymOtherIntent = (app) =>
   {
+    app.data.synonym=app.data.synonym===undefined?0:app.data.synonym+1;
     database(app);
     var ssmlResponse = new Ssml();
+    var nextResponse = new Ssml();
     var word = (app.data.word===undefined?null:app.data.word);//request.body["result"]["parameters"]["Word"];;
     if(word!=null)
     {
@@ -1512,31 +1523,48 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         if(err)
         {
           ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
-          ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+          ssmlResponse.say(TTS_DELAY);
+          nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
           app.ask(app
             .buildRichResponse()
             .addSimpleResponse(ssmlResponse.toString())
+            .addSimpleResponse(nextResponse.toString())
             .addSuggestions(["play game","dictionary","help"]))
         }
         var a="";
         //app.data.word=word
         definitions[0].meta.words.forEach(function(word)
         {
-          a+=word.word+"; ";
+          if(app.data.word!==word.word)
+            a+=word.word+"; ";
         })
-        ssmlResponse.say("The Synonym of "+word+" "+a);
-        app.ask(app
-          .buildRichResponse()
-          .addSimpleResponse(ssmlResponse.toString())
-          .addSuggestions(["play game","dictionary","help"]))
+        if(a.length)
+        {
+          ssmlResponse.say("The Synonym of ");
+          a.split(";").forEach(function(def){
+            ssmlResponse.say(def+", ")
+            ssmlResponse.pause(TTS_DELAY)
+          })
+        }
+        else{
+          ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND))
+        }  
+        ssmlResponse.pause(TTS_DELAY)
+        nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+          app.ask(app
+            .buildRichResponse()
+            .addSimpleResponse(ssmlResponse.toString())
+            .addSuggestions(["play game","dictionary","help"]))
       });
     }
     else {
       ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
-      ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      ssmlResponse.pause(TTS_DELAY)
+      nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
       app.ask(app
         .buildRichResponse()
         .addSimpleResponse(ssmlResponse.toString())
+        .addSimpleResponse(nextResponse.toString())
         .addSuggestions(["play game","dictionary"]))
     }
   }
@@ -1545,13 +1573,13 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     database(app);
     console.log("In synonym intent");
     var ssmlResponse = new Ssml();
-    //ssmlResponse.say("Okay taking back to dictionary instead");
     dictionaryIntent(app);
   }
 
   const synonymIntent = (app) =>{
 
     var ssmlResponse = new Ssml();
+    var nextResponse = new Ssml();
     app.data.synonym=app.data.synonym===undefined?0:app.data.synonym+1;
     database(app);
     console.log(request.body)
@@ -1582,10 +1610,12 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         if(err)
         {
           ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
-          ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+          ssmlResponse.pause(TTS_DELAY);
+          nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
           app.ask(app
             .buildRichResponse()
             .addSimpleResponse(ssmlResponse.toString())
+            .addSimpleResponse(nextResponse.toString())
             .addSuggestions(["play game","dictionary","help"])
           )
         }
@@ -1600,34 +1630,40 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         })
         if(a.length!=0)
         {
+          ssmlResponse.say("The synonym of "+word+" are ");
+          //ssmlResponse.pause(TTS_DELAY);
+          a.split(";").forEach(function(def){
+            ssmlResponse.say(def+", ");
+            ssmlResponse.pause(TTS_DELAY)
+          })
           switch(Math.floor(Math.random()*3))
           {
             case 0:
-            ssmlResponse.say("The synonym of "+word+" is "+a+".");
-            ssmlResponse.say("Would you like to know the antonym as well?");
+            nextResponse.say("Would you like to know the antonym as well?");
             app.setContext(Antonym_Context);
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
+              .addSimpleResponse(nextResponse.toString())
               .addSuggestions(["Yes","No"])
               )
             break;
             case 1:
-            ssmlResponse.say("The synonym of "+word+" is "+a);
-            ssmlResponse.say("Would you like to know the meaning as well?");
+            nextResponse.say("Would you like to know the meaning as well?");
             app.setContext(Meaning_Context)
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
+              .addSimpleResponse(nextResponse.toString())
               .addSuggestions(["Yes","No"])
               )
             break;
             case 2:
-            ssmlResponse.say("The synonym of "+word+" is "+a+".");
-            ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+            nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
+              .addSimpleResponse(nextResponse.toString())
               .addSuggestions(["play game","dictionary","help"])
               )
             break;
@@ -1635,10 +1671,12 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
           }
           else{
             ssmlResponse.say("I do not have synonym for "+word+".\n");
-            ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+            ssmlResponse.pause(TTS_DELAY)
+            nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
+              .addSimpleResponse(nextResponse.toString())
               .addSuggestions(["play game","dictionary","help"])
             )
           }
@@ -1647,10 +1685,12 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
       }
       else {
         ssmlResponse.say(getRandomPromp(PROMPT_TYPES.NOT_FOUND));
-        ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        ssmlResponse.pause(TTS_DELAY)
+        nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
           .buildRichResponse()
           .addSimpleResponse(ssmlResponse.toString())
+          .addSimpleResponse(nextResponse.toString())
           .addSuggestions(["play game","dictionary","help"])
         )
       }
@@ -1658,9 +1698,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
   }
 
   const antonymIntent =(app) =>{
-    app.data.antonym=app.data.antonym===undefined?0:app.data.antonym;
+    app.data.antonym=app.data.antonym===undefined?0:app.data.antonym+1;
     database(app);
     let ssmlResponse= new Ssml();
+    let nextResponse = new Ssml();
     if(request.body["result"]["parameters"]["antonyms"]===undefined)
     {
       var word = request.body["result"]["parameters"]["Word"];
@@ -1693,51 +1734,61 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         app.data.word=word
         if(antonyms.length)
         {
+          ssmlResponse.say("The antonyms of the word "+app.data.word+" are ");
           console.log(antonyms)
+          antonyms.split(";").forEach(function(def){
+            ssmlResponse.say(def+", ")
+            ssmlResponse.pause(TTS_DELAY)
+          })
           switch(Math.floor(Math.random()*3))
           {
             case 0:
-            ssmlResponse.say("The antonyms of the word "+word+" are"+antonyms+".\n");
-            ssmlResponse.say("Would you like to know the synonym as well?");
+            nextResponse.say("Would you like to know the synonym as well?");
             app.setContext(Synonyn_CONTEXT);
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
+              .addSimpleResponse(nextResponse.toString())
               .addSuggestions([utils.YES, utils.NO]));          
             break;
             case 1:
-            ssmlResponse.say("The antonyms of the word "+word+" are"+antonyms+".\n"+"Would you like to know the meaning as well?");
+            nextResponse.say("Would you like to know the meaning as well?");
             app.setContext(Meaning_Context);
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
+              .addSimpleResponse(nextResponse.toString())
               .addSuggestions([utils.YES, utils.NO]));
             break;
             case 2:
-            ssmlResponse.say("The antonyms of the word "+word+" are"+antonyms+".\n");
-            ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+            nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
             app.ask(app
               .buildRichResponse()
               .addSimpleResponse(ssmlResponse.toString())
-              .addSuggestions([utils.YES, utils.NO]));
+              .addSimpleResponse(nextResponse.toString())
+              .addSuggestions(["Dictionary", "Play Game"]));
             break;
           }
         }
         else{
           ssmlResponse.say("There is no antonyms for the word "+word+" in my dictionary.\n");
-          ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+          ssmlResponse.pause(TTS_DELAY)
+          nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
           app.ask(app
             .buildRichResponse()
             .addSimpleResponse(ssmlResponse.toString())
+            .addSimpleResponse(nextResponse.toString())
             .addSuggestions(["dictionary", "play game"]));
         }
       }
       else{
         ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
-        ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        ssmlResponse.pause(TTS_DELAY)
+        nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
           .buildRichResponse()
           .addSimpleResponse(ssmlResponse.toString())
+          .addSimpleResponse(nextResponse.toString())
           .addSuggestions(["play game","dictionary"])
         )
       }
@@ -1747,7 +1798,9 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
   const wordhelpIntent = (app) =>{
     database(app);
     var ssmlResponse = new Ssml();
-    ssmlResponse.say("You can either know meaning of the word or synonym of word as well as antonym, or you could say play game to play an interactive game at any moment");
+    ssmlResponse.say("You can either know meaning of the word or synonym of word as well as antonym, ");
+    ssmlResponse.pause(TTS_DELAY)
+    ssmlResponse.say("or you could say play game to play an interactive game at any moment");
     app.ask(app
       .buildRichResponse()
       .addSimpleResponse(ssmlResponse.toString())
@@ -1802,7 +1855,9 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
           [DATABASE_RESPONSE_WELCOME]:app.data.check===undefined?0:app.data.welcome,
           [DATABASE_RESPONSE_ENGAGEMENT]:data.val()[DATABASE_RESPONSE_ENGAGEMENT]+1,
           [DATABASE_RESPONSE_ANTONYM]:app.data.antonym===undefined?0:app.data.antonym,
-          [DATABASE_RESPONSE_SYNONYM]:app.data.synonym===undefined?0:app.data.synonym
+          [DATABASE_RESPONSE_SYNONYM]:app.data.synonym===undefined?0:app.data.synonym,
+          [DATABASE_RESPONSE_MEANING]:app.data.meaning===undefined?0:app.data.meaning,
+          [DATABASE_RESPONSE_REPAIR] : app.data.repair===undefined?0:app.data.repair
         });
       } else {
         firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId).update({
@@ -1810,7 +1865,9 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
           [DATABASE_RESPONSE_WELCOME]:0,
           [DATABASE_RESPONSE_ENGAGEMENT]:0,
           [DATABASE_RESPONSE_ANTONYM]:0,
-          [DATABASE_RESPONSE_SYNONYM]:0
+          [DATABASE_RESPONSE_SYNONYM]:0,
+          [DATABASE_RESPONSE_MEANING]:0,
+          [DATABASE_RESPONSE_REPAIR]:0
         });
       }
     });
@@ -1830,6 +1887,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     database(app);
     var ssmlResponse = new Ssml();
     ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.WORD_QUIT_PROMPTS));
+    ssmlResponse.pause(TTS_DELAY);
     ssmlResponse.say(".Please fill the feedback of how did I perform.");
     app.ask(app
       .buildRichResponse()
@@ -1851,6 +1909,8 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
 
   const antonymOtherIntent =(app) =>{
     var ssmlResponse = new Ssml();
+    var nextResponse = new Ssml();
+    app.data.antonym=app.data.antonym===undefined?0:app.data.antonym+1;
     database(app);
     var word=app.data.word;
     if(word!=null)
@@ -1864,29 +1924,37 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
       })
       if(antonyms.length)
       {
-          ssmlResponse.say("The antonyms of the word "+word+" are"+antonyms+".\n");
-          ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+          ssmlResponse.say("The antonyms of the word "+word+" are ");
+          antonyms.split(";").forEach(function(def){
+            ssmlResponse.say(def+",")
+            ssmlResponse.pause(TTS_DELAY)
+          })
+          nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
           app.ask(app
             .buildRichResponse()
             .addSimpleResponse(ssmlResponse.toString())
+            .addSimpleResponse(nextResponse.toString())
             .addSuggestions([utils.YES, utils.NO]));
       }
       else{
         ssmlResponse.say("There is no antonyms for the word "+word+" in my dictionary.\n");
         ssmlResponse.pause(TTS_DELAY);
-        ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+        nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
           .buildRichResponse()
           .addSimpleResponse(ssmlResponse.toString())
+          .addSimpleResponse(nextResponse.toString())
           .addSuggestions(["dictionary", "play game"]));
       }
     }
     else{
       ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
-      ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      ssmlResponse.pause(TTS_DELAY)
+      nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
       app.ask(app
         .buildRichResponse()
         .addSimpleResponse(ssmlResponse.toString())
+        .addSimpleResponse(nextResponse.toString())
         .addSuggestions(["play game","dictionary"])
       )
     }
@@ -1898,9 +1966,11 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
   }
 
   const meaningOtherIntent = (app) =>{
+    app.data.meaning=app.data.meaning===undefined?0:app.data.meaning+1;
     database(app);
     var word=app.data.word;
-    var ssmlResponse = new Ssml(); 
+    var ssmlResponse = new Ssml();
+    var nextQuestion = new Ssml(); 
     if(word!=null)
     {
           var a=null;
@@ -1910,20 +1980,27 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
               if(err)
               {
                 ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+"\n");
-                ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+                ssmlResponse.pause(TTS_DELAY)
+                nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
                 app.ask(app
                   .buildRichResponse()
                   .addSimpleResponse(ssmlResponse.toString())
+                  .addSimpleResponse(nextResponse.toString())
                   .addSuggestions(["play game","dictionary"]))
               } 
               else
               {
                 console.log(data[0]['glossary']);
                 console.log('response sent');
-                ssmlResponse.say(data[0]['glossary']);
+                data[0]['glossary'].split(";").forEach(function(def){
+                  ssmlResponse.say(def+", ");
+                  ssmlResponse.pause(TTS_DELAY)
+                })
+                nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
                 app.ask(app
                   .buildRichResponse()
                   .addSimpleResponse(ssmlResponse.toString())
+                  .addSimpleResponse(nextResponse.toString())
                   .addSuggestions(["dictionary","play game"])
                 )
               }
@@ -1932,10 +2009,12 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     else
     {
       ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND)+"\n");
-      ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+      ssmlResponse.pause(TTS_DELAY)
+      nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
       app.ask(app
         .buildRichResponse()
         .addSimpleResponse(ssmlResponse.toString())
+        .addSimpleResponse(nextResponse.toString())
         .addSuggestions(["play game","dictionary"]))
     }
   }

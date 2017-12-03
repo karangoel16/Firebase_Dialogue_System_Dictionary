@@ -192,9 +192,9 @@ const Themes = class {
     if(theme && type)
     {
       const prompts=this.getPrompts(theme,type);
-      if(prompts && index)
+      if(prompts)
       {
-        return prompts[index % array.length];
+        return prompts[index < prompts.length-1?index:prompts.length-1];
       }
     }
     return `Missing prompts: ${type}`;

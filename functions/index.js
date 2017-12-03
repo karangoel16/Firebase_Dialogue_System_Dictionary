@@ -135,6 +135,9 @@ const DATABASE_ANSWERS = 'answers';
 const DATABASE_FOLLOW_UPS = 'followUps';
 const DATABASE_RESPONSE_CHECK ="check";
 const DATABASE_RESPONSE_ENGAGEMENT="engagement";
+const DATABASE_RESPONSE_WELCOME="welcome";
+const DATABASE_RESPONSE_ANTONYM="antonym";
+const DATABASE_RESPONSE_SYNONYM="synonym";
 
 const theme = THEME_TYPES.TRIVIA_TRIVIA_BOT_THEME;
 const AUDIO_BASE_URL = `${HOSTING_URL}/audio/`;
@@ -206,6 +209,15 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     return prompt;
   };
 
+  const getItemisedPrompt= (index,idx) =>{
+    const prompt = themes.getItemisedPrompt(theme, index, app.data.lastPrompt,idx);
+    if(!hasLastPrompt)
+    {
+      hasLastPrompt =true;
+      app.data.lastPrompt = prompt;
+    }
+    return prompt;
+  }
   // Select new questions, avoiding the previous questions
   const selectQuestions = (questions) => {
     logger.debug(logObject('trivia', 'post', {
@@ -1489,6 +1501,7 @@ const synonymOtherNoIntent=(app) =>{
 const synonymIntent = (app) =>{
 
   var ssmlResponse = new Ssml();
+  app.data.synonym=app.data.synonym===undefined?0:app.data.synonym+1;
   database(app);
   console.log(request.body)
   if(request.body["result"]["parameters"]["Synonym"]===undefined)
@@ -1530,15 +1543,26 @@ const synonymIntent = (app) =>{
         app.data.word=word
         definitions[0].meta.words.forEach(function(word)
         {
-          if(app.data.word!==word)
+          if(app.data.word !== word.word)
             a+=word.word+"; ";
        })
-       ssmlResponse.say("The synonym of "+word+" is "+a);
-       app.ask(app
-        .buildRichResponse()
-        .addSimpleResponse(ssmlResponse.toString())
-        .addSuggestions(["play game","dictionary","help"])
-        )
+       if(a.length!=0)
+       {
+        ssmlResponse.say("The synonym of "+word+" is "+a);
+        app.ask(app
+          .buildRichResponse()
+          .addSimpleResponse(ssmlResponse.toString())
+          .addSuggestions(["play game","dictionary","help"])
+          )
+        }
+        else{
+          ssmlResponse.say("I do not have synonym for "+word+".\n"+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+          app.ask(app
+            .buildRichResponse()
+            .addSimpleResponse(ssmlResponse.toString())
+            .addSuggestions(["play game","dictionary","help"])
+          )
+        }
       }
       });
     }
@@ -1554,6 +1578,7 @@ const synonymIntent = (app) =>{
 }
 
 const antonymIntent =(app) =>{
+  app.data.antonym=app.data.antonym===undefined?0:app.data.antonym;
   database(app);
   let ssmlResponse= new Ssml();
   if(request.body["result"]["parameters"]["antonyms"]===undefined)
@@ -1623,10 +1648,12 @@ const wordhelpIntent = (app) =>{
     .addSuggestions(["play game","help"]));
 }
 
+//to check how many times we have entered the welcome module of the program
 const welcomeIntent = (app) =>{
-  app.data.check=app.data.check===undefined?0:app.data.check;
+  app.data.welcome=app.data.welcome===undefined?0:app.data.welcome+1;
+  database(app)
   var ssmlResponse = new Ssml();
-  if(app.data.check==0)
+  if(app.data.welcome==0)
   {
     ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.TUTORIAL_PROMPTS));
     app.ask(app
@@ -1650,14 +1677,14 @@ const dictionaryIntent = (app) =>{
   app.data.check=app.data.check===undefined?0:app.data.check+1;
   database(app);
   var ssmlResponse =new Ssml();
-  ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.DICTIONARY_PROMPT));
+  ssmlResponse.say(getItemisedPrompt(PROMPT_TYPES.DICTIONARY_PROMPT,app.data.check));
   app.ask(app
     .buildRichResponse()
     .addSimpleResponse(ssmlResponse.toString())
     .addSuggestions(["meaning of ace","antonym of ace","synonym of ace","help"])
   )
 }
-var database = (app)=>{
+const database = (app)=>{
   firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId)
   .once('value', (data) => {
       //console.log(data.val())
@@ -1665,12 +1692,18 @@ var database = (app)=>{
       console.log("val"+data.val()[DATABASE_RESPONSE_CHECK].toString())
       firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId).update({
         [DATABASE_RESPONSE_CHECK]:app.data.check===undefined?0:app.data.check,
-        [DATABASE_RESPONSE_ENGAGEMENT]:data.val()[DATABASE_RESPONSE_ENGAGEMENT]+1
+        [DATABASE_RESPONSE_WELCOME]:app.data.check===undefined?0:app.data.welcome,
+        [DATABASE_RESPONSE_ENGAGEMENT]:data.val()[DATABASE_RESPONSE_ENGAGEMENT]+1,
+        [DATABASE_RESPONSE_ANTONYM]:app.data.antonym===undefined?0:app.data.antonym,
+        [DATABASE_RESPONSE_SYNONYM]:app.data.synonym===undefined?0:app.data.synonym
       });
     } else {
       firebaseAdmin.database().ref(DATABASE_RESPONSE_CHECK).child(request.body.sessionId).update({
         [DATABASE_RESPONSE_CHECK]:0,
-        [DATABASE_RESPONSE_ENGAGEMENT]:0
+        [DATABASE_RESPONSE_WELCOME]:0,
+        [DATABASE_RESPONSE_ENGAGEMENT]:0,
+        [DATABASE_RESPONSE_ANTONYM]:0,
+        [DATABASE_RESPONSE_SYNONYM]:0
       });
     }
   });

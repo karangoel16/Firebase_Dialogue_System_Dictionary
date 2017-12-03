@@ -877,7 +877,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         app.tell(ssmlResponse.toString());
       }
     };
-
+    
     // Try fuzzy and partial matching against the answers
     const rawInput = app.getRawInput().trim();
     if (!otherIntentTriggered && selectedAnswers) {
@@ -1708,7 +1708,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
           }
         }
         else{
-          ssmlResponse.say("There is no antonyms for the word "+word+" in my dictionary"+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
+          ssmlResponse.say("There is no antonyms for the word "+word+" in my dictionary.\n"+getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
           app.ask(app
             .buildRichResponse()
             .addSimpleResponse(ssmlResponse.toString())

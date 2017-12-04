@@ -1429,7 +1429,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     let nextResponse = new Ssml();
     if(request.body["result"]["parameters"]["meaning"].length==0)
     {
-      var word = request.body["result"]["parameters"]["Word"];
+      var word = request.body["result"]["parameters"]["Word"]===undefined?app.data.word:request.body["result"]["parameters"]["Word"];
       if(word==null)
       {
         dictionaryIntent(app);
@@ -1447,9 +1447,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     else
     {
       console.log(request.body["result"]["resolvedQuery"]);
-      var word = request.body["result"]["parameters"]["Word"];
-      if(word!=null)
+      var word = (request.body["result"]["parameters"]["Word"]===undefined || request.body["result"]["parameters"]["Word"]===null || !request.body["result"]["parameters"]["Word"].length)?app.data.word:request.body["result"]["parameters"]["Word"];
+      if(word!=null && word!== undefined && word.length)
       {
+        app.data.word=word
         wordnet.lookup(word, function(err, data) {
             console.log('inside wordnet lookup function');
             if(err)
@@ -1464,9 +1465,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
             } 
             else
             {
+              var temp=data[0]['glossary'].split(";")
               console.log(data[0]['glossary']);
-              ssmlResponse.say("The meaning of "+word+" is ")
-              data[0]['glossary'].split(";").forEach(function(def){
+              ssmlResponse.say("The meaning of "+word+(temp.length>1?" are ":" is "))
+              temp.forEach(function(def){
                 ssmlResponse.say(def+", ");
                 ssmlResponse.pause(TTS_DELAY);
               });
@@ -1496,7 +1498,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
       }
       else
       {
-        ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
+        ssmlResponse.say("I was not able to understand the word, Could you please repeat?");
         ssmlResponse.pause(TTS_DELAY);
         ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
@@ -1517,7 +1519,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     var ssmlResponse = new Ssml();
     var nextResponse = new Ssml();
     var word = (app.data.word===undefined?null:app.data.word);//request.body["result"]["parameters"]["Word"];;
-    if(word!=null)
+    if(word!=null && word!==undefined && word.length)
     {
       wordnet.lookup(word, function(err, definitions) {
         if(err)
@@ -1540,8 +1542,9 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         })
         if(a.length)
         {
-          ssmlResponse.say("The Synonym of ");
-          a.split(";").forEach(function(def){
+          var temp=a.split(";")
+          ssmlResponse.say("The Synonym of "+word+(temp.length>1?" are ":" is "));
+          temp.forEach(function(def){
             ssmlResponse.say(def+", ")
             ssmlResponse.pause(TTS_DELAY)
           })
@@ -1585,7 +1588,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     console.log(request.body)
     if(request.body["result"]["parameters"]["Synonym"]===undefined)
     {
-      var word = request.body["result"]["parameters"]["Word"];
+      var word = request.body["result"]["parameters"]["Word"]===undefined?app.data.word:request.body["result"]["parameters"]["Word"];
       if(word==null)
       {
         dictionaryIntent(app)
@@ -1594,7 +1597,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
       {
         console.log(request.body)
         console.log("I understood it as meaning of word")
-        ssmlResponse.say("I am sorry, I am having hard time to understand you! Could you please repeat again");
+        ssmlResponse.say("I am sorry! But could you please repeat again");
         app.ask(app
           .buildRichResponse()
           .addSimpleResponse(ssmlResponse.toString())
@@ -1603,8 +1606,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     }
     else
     {
-      var word = request.body["result"]["parameters"]["Word"];;
-      if(word!=null)
+      var word = (request.body["result"]["parameters"]["Word"]===undefined || request.body["result"]["parameters"]["Word"]===null || !request.body["result"]["parameters"]["Word"].length )?app.data.word:request.body["result"]["parameters"]["Word"];
+      //console.log(word+"&&&&&&&&&&&&&&&&&&&&&"+app.data.word+"&&&&&&&&&&&&&&&"+request.body["result"]["parameters"]["Word"]+"^^^^^^^^^^^^^^^^^^^^^")
+      app.data.word=word
+      if(word!==null && word!==undefined && word.length)
       {
         wordnet.lookup(word, function(err, definitions) {
         if(err)
@@ -1622,7 +1627,6 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         else
         {
           var a="";
-          app.data.word=word
           definitions[0].meta.words.forEach(function(word)
           {
             if(app.data.word !== word.word)
@@ -1630,9 +1634,10 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         })
         if(a.length!=0)
         {
-          ssmlResponse.say("The synonym of "+word+" are ");
+          var temp=a.split(";")
+          ssmlResponse.say("The synonym of "+word+(temp.length>1?" are ":" is "));
           //ssmlResponse.pause(TTS_DELAY);
-          a.split(";").forEach(function(def){
+          temp.forEach(function(def){
             ssmlResponse.say(def+", ");
             ssmlResponse.pause(TTS_DELAY)
           })
@@ -1684,7 +1689,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         });
       }
       else {
-        ssmlResponse.say(getRandomPromp(PROMPT_TYPES.NOT_FOUND));
+        ssmlResponse.say("I was not able to understand the word, Could you please repeat the sentence?");
         ssmlResponse.pause(TTS_DELAY)
         nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
@@ -1704,7 +1709,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     let nextResponse = new Ssml();
     if(request.body["result"]["parameters"]["antonyms"]===undefined)
     {
-      var word = request.body["result"]["parameters"]["Word"];
+      var word = (request.body["result"]["parameters"]["Word"]===undefined || request.body["result"]["parameters"]["Word"]===null || !request.body["result"]["parameters"]["Word"].length)?app.data.word:request.body["result"]["parameters"]["Word"];
       if(word==null)
       {
           dictionaryIntent(app)
@@ -1721,22 +1726,23 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     }
     else
     {
-      var word = request.body["result"]["parameters"]["Word"];
-      if(word!=null)
+      var word = (request.body["result"]["parameters"]["Word"]===undefined||request.body["result"]["parameters"]["Word"]===null) ?app.data.word:request.body["result"]["parameters"]["Word"];
+      if(word!== null && word!== undefined && word.length)
       {
         console.log(word)
         var antonyms=""
+        app.data.word=word
         wn.antonyms(word).forEach(function(word){
           word["words"].forEach(function(val){
             antonyms+=val+";"
           })
         })
-        app.data.word=word
         if(antonyms.length)
         {
-          ssmlResponse.say("The antonyms of the word "+app.data.word+" are ");
+          var temp=antonyms.split(";")
+          ssmlResponse.say("The antonyms of the word "+app.data.word+(temp.length>1?" are ":" is "));
           console.log(antonyms)
-          antonyms.split(";").forEach(function(def){
+          temp.forEach(function(def){
             ssmlResponse.say(def+", ")
             ssmlResponse.pause(TTS_DELAY)
           })
@@ -1771,7 +1777,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
           }
         }
         else{
-          ssmlResponse.say("There is no antonyms for the word "+word+" in my dictionary.\n");
+          ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
           ssmlResponse.pause(TTS_DELAY)
           nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
           app.ask(app
@@ -1782,7 +1788,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
         }
       }
       else{
-        ssmlResponse.say(getRandomPrompt(PROMPT_TYPES.NOT_FOUND));
+        ssmlResponse.say("Sorry I was not able to understand the word, Could you please repeat?");
         ssmlResponse.pause(TTS_DELAY)
         nextResponse.say(getRandomPrompt(PROMPT_TYPES.SUGGESTED_PROMPTS));
         app.ask(app
@@ -1924,8 +1930,9 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
       })
       if(antonyms.length)
       {
-          ssmlResponse.say("The antonyms of the word "+word+" are ");
-          antonyms.split(";").forEach(function(def){
+          var temp=antonyms.split(";")
+          ssmlResponse.say("The antonyms of the word "+word+(temp.length>1?" are ":" is "));
+          temp.forEach(function(def){
             ssmlResponse.say(def+",")
             ssmlResponse.pause(TTS_DELAY)
           })
@@ -1934,7 +1941,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
             .buildRichResponse()
             .addSimpleResponse(ssmlResponse.toString())
             .addSimpleResponse(nextResponse.toString())
-            .addSuggestions([utils.YES, utils.NO]));
+            .addSuggestions(["Dictionary", "Play game"]));
       }
       else{
         ssmlResponse.say("There is no antonyms for the word "+word+" in my dictionary.\n");
@@ -1970,7 +1977,7 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
     database(app);
     var word=app.data.word;
     var ssmlResponse = new Ssml();
-    var nextQuestion = new Ssml(); 
+    var nextResponse = new Ssml(); 
     if(word!=null)
     {
           var a=null;
@@ -1990,9 +1997,11 @@ exports.triviaGame = functions.https.onRequest((request, response) => {
               } 
               else
               {
+                var temp=data[0]['glossary'].split(";")
                 console.log(data[0]['glossary']);
                 console.log('response sent');
-                data[0]['glossary'].split(";").forEach(function(def){
+                ssmlResponse.say("The meaning of the word "+word+(temp.length>1?" are ":" is "))
+                temp.forEach(function(def){
                   ssmlResponse.say(def+", ");
                   ssmlResponse.pause(TTS_DELAY)
                 })
